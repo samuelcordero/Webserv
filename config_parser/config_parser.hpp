@@ -1,23 +1,16 @@
-#pragma once
+#ifndef CONFIG_PARSER_HPP
+#define CONFIG_PARSER_HPP
 
 #include <string>
 #include <iostream>
 #include <vector>
+#include <fstream>
+#include <sstream>
+//#include "Location.hpp"
+//#include "Server.hpp"
 
-#define default_name "default_name"
-#define default_port 4242
 
-class Location {
-	private:
-		std::string path;
-		std::string root;
-		std::vector<std::string> methods;
-	
-	public:
-		Location();
-		Location(std::string path, std::string root, std::vector<std::string> methods);
-		~Location();
-		std::string getPath();
-		std::string getRoot();
-		std::vector<std::string> getMethods();
-}
+std::vector<std::string> parseConfigFile(std::string configFile);
+std::string readConfigFile(std::string filePath);
+
+#endif
