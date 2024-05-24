@@ -9,9 +9,10 @@ class Server {
 		std::vector<Location> 	locations;
 
 	public:
-		Server();
+		Server(std::string serverBlock);
 		~Server();
 		std::string getName();
 		int getPort();
 		std::vector<Location> getLocations();
-}
+		void	parseBlock(std::string serverBlock);
+};
