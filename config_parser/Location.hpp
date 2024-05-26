@@ -2,33 +2,19 @@
 
 #include "config_parser.hpp"
 
-enum	states{
-	START,
-	ERROR,
-	SERVER, //0
-	SERVER_OPEN, //0
-	SERVER_CLOSE, // 9
-	KEYWORD, // 2
-	VALUE, // 3
-	SEMICOLON, // 4
-	LOCATION, // 5
-	LOCATION_URI, // 8
-	LOCATION_OPEN, // 6
-	LOCATION_CLOSE // 7
-};
-
 class Location {
 	private:
-		std::string index;
-		std::string root;
-		std::vector<std::string> methods;
+		std::vector<std::string>	index;
+		std::string 				uri;
+		std::vector<std::string>	methods;
 	
 	public:
-		Location();
-		Location(std::string path, std::string root, std::vector<std::string> methods);
+		Location(std::vector<std::string> locationBlock);
 		~Location();
-		std::string getPath();
-		std::string getRoot();
-		std::vector<std::string> getMethods();		
+		std::string					getPath();
+		std::string					getRoot();
+		std::vector<std::string>	getMethods();	
+		void						setMethods(size_t i, const std::vector<std::string> &locationBlock);
+		void						setIndex(size_t i, const std::vector<std::string> &locationBlock);
+		void						setCgi(size_t i, const std::vector<std::string> &locationBlock);
 };
-

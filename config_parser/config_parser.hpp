@@ -6,8 +6,8 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
-//#include "Location.hpp"
-//#include "Server.hpp"
+#include "Location.hpp"
+#include "Server.hpp"
 
 enum	States{
 	START,
@@ -24,6 +24,8 @@ enum	States{
 	LOCATION_CLOSE
 };
 
+class Server;
+
 const	std::string keywords[] = {
 	"name",
 	"listen",
@@ -31,21 +33,27 @@ const	std::string keywords[] = {
 	"root",
 	"methods",
 	"index",
+	"Max_Body_Size",
+	"accepted_methods"
 };
 
 class Parser{
-	private:
+	private: 
+		std::vector<Server>			Servers;
 		std::vector<std::string>	words;
 		std::string					trimedFile;
+		std::string					filePath;
 
 	public:
-		Parser();
+		Parser(std::string FilePath);
 		~Parser();
 		int		autoStatus(int x, int y);
-		void	trimComments(std::string filePath);
+		void	trimComments();
 		void	splitWords();
 		int		setValues();
 		int		getStatus(std::string word, int prevStatus);
+		void	createServers();
+		void	setFilePath(std::string filePath);
 };
 
 std::vector<std::string> splitConfigFile(std::string configFile);

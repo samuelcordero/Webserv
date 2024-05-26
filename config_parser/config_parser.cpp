@@ -1,6 +1,6 @@
 #include "config_parser.hpp"
 
-/*std::string readConfigFile(std::string filePath){ //read the config file
+std::string readConfigFile(std::string filePath){ //read the config file
 	std::ifstream file(filePath.c_str());
 
 	if (!file.is_open()) {
@@ -24,9 +24,9 @@ std::vector<std::string> splitConfigFile(std::string configFile) { //split the s
 		size_t	startPos = pos;
 		for (size_t i = pos + delimiter.length(); i < configFile.size(); i++)
 		{
-			if (configFile[i] == '{')
+			if (configFile[i] == '[')
 				openBrackets++;
-			else if (configFile[i] == '}')
+			else if (configFile[i] == ']')
 				closeBrackets++;
 			if (openBrackets > 0 && openBrackets == closeBrackets)
 			{
@@ -41,9 +41,11 @@ std::vector<std::string> splitConfigFile(std::string configFile) { //split the s
 		pos += delimiter.length();
 	}
 	return (servers);
-}*/
+}
 
-Parser::Parser(){}
+Parser::Parser(std::string FilePath){
+	this->filePath = FilePath;
+}
 
 Parser::~Parser(){}
 
@@ -77,9 +79,9 @@ static void	trimLine(std::string &line)
     }
 }
 
-void	Parser::trimComments(const std::string filePath)
+void	Parser::trimComments()
 {
-	std::ifstream	inputFile(filePath.c_str());
+	std::ifstream	inputFile(this->filePath.c_str());
 
 	if (!inputFile.is_open())
 	{
@@ -136,9 +138,15 @@ int	Parser::setValues()
 	while (i < this->words.size())
 	{
 		prevStatus = this->getStatus(this->words[i], prevStatus);
+		if (prevStatus == 1)
+		{
+			std::cerr << "Error non valid config file." << std::endl;
+			return (1);
+		}
 		i++;
 	}
-	return prevStatus;
+	this->createServers();
+	return (0);
 }
 
 static	bool finder(std::string word)
@@ -174,15 +182,27 @@ int	Parser::getStatus(std::string word, int prevStatus)
 		status = 11;
 	else
 		status = 6;
-	std::cout << word << " [" << status << "]" << std::endl;
-	std::cout << "---------------------------" << std::endl;
-	std::cout << this->autoStatus(prevStatus, status) << std::endl;
+	//std::cout << word << " [" << status << "]" << std::endl;
+	//std::cout << "---------------------------" << std::endl;
+	//std::cout << this->autoStatus(prevStatus, status) << std::endl;
 	return (this->autoStatus(prevStatus, status));
+}
+
+void	Parser::createServers()
+{
+	std::string	File = readConfigFile(this->filePath);
+	std::vector<std::string> Blocks = splitConfigFile(File);
+
+	for (size_t i = 0; i < Blocks.size(); i++)
+	{
+		this->Servers.push_back(Server(Blocks[i]));
+		std::cout << i << std::endl;
+		}
 }
 
 int	main()
 {
-	Parser *a = new Parser;
+	Parser *a = new Parser("../config/default.conf");
 
 	a->trimComments("../config/default.conf");
 	a->splitWords();
