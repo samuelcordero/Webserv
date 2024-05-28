@@ -1,0 +1,141 @@
+#include "Server.hpp"
+
+Server::Server(std::string serverBlock)
+{
+	this->block = serverBlock;
+	//std::cout << serverBlock << std::endl;
+	this->maxBodySize = 1000000;
+	this->splitBlock();
+	this->fillValues();
+}
+
+Server::~Server(){}
+
+
+void	Server::splitBlock()
+{
+	std::istringstream	splited(this->block);
+	std::string			word;
+	while (splited >> word)
+	{
+		if (word == ";")
+			this->words.push_back(";");
+		else if (word[word.length() - 1] == ';')
+		{
+			this->words.push_back(word.substr(0, word.length() - 1));
+			this->words.push_back(";");
+		}
+		else
+			this->words.push_back(word);
+	}
+
+	//for (size_t i = 0; i < this->words.size(); i++)
+		//std::cout << this->words[i] << std::endl;
+}
+
+void	Server::fillValues()
+{
+	for (size_t i = 0; i < this->words.size(); i++)
+	{
+		if (this->words[i] == "name")
+			this->setName(i + 1);
+		else if (this->words[i] == "listen")
+			this->setListen(i);
+		else if (this->words[i] == "location")
+			this->createLocation(i);
+		else if (this->words[i] == "Max_Body_Size")
+			this->setMaxBodySize(i);
+	}
+}
+
+void	Server::setName(size_t i)
+{
+	while (i < this->words.size())
+	{
+		if (this->words[i + 1] == ";")
+		{
+			this->name = this->words[i];
+			break;
+		}
+		i++;
+	}
+}
+
+static	int	extractPort(const std::string &address)
+{
+	size_t colonPos = address.find(':');
+
+	if (colonPos == std::string::npos)
+	{
+		std::cerr << "Couldn´t find port" << std::endl;
+		return (-1);
+	}
+
+	std::string	strPort = address.substr(colonPos + 1);
+
+	int	port = std::atoi(strPort.c_str());
+
+	if (port == 0 && strPort != "0")
+	{
+		std::cerr << "Non valid port" << std::endl;
+		return (-1);
+	}
+
+	return (port);
+}
+
+void	Server::setListen(size_t i)
+{
+	while (i < this->words.size())
+	{
+		if (this->words[i + 1] == ";")
+		{
+			this->listen = this->words[i];
+			this->port = extractPort(this->words[i]);
+			break;
+		}
+		i++;
+	}
+}
+
+
+void	Server::createLocation(size_t i)
+{
+	std::vector<std::string>	aux;
+	
+	i++;
+	while (this->words[i] != "}")
+	{
+		aux.push_back(this->words[i]);
+		i++;	
+	}
+	this->locations.push_back(Location(aux));
+}
+
+void	Server::setMaxBodySize(size_t i)
+{
+	while (i < this->words.size())
+	{
+		if (this->words[i + 1] == ";")
+		{	
+			char *endPtr;
+			this->maxBodySize = std::strtoul(this->words[i].c_str(), &endPtr, 10);
+			if (*endPtr != '\0' || endPtr == this->words[i].c_str())
+			{
+				std::cerr << "Error non valid body size, set to default" << std::endl;
+				this->maxBodySize = 1000000;
+				return ;
+			}
+			break;
+		}
+		i++;
+	}
+}
+
+void	Server::serverRun()
+{
+	std::cout << this->name << std::endl;
+	std::cout << this->listen << std::endl;
+	std::cout << this->port << std::endl;
+	std::cout << this->maxBodySize << std::endl;
+}
