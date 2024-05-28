@@ -3,7 +3,10 @@
 Server::Server(std::string serverBlock)
 {
 	this->block = serverBlock;
-	std::cout << serverBlock << std::endl;
+	//std::cout << serverBlock << std::endl;
+	this->maxBodySize = 1000000;
+	this->splitBlock();
+	this->fillValues();
 }
 
 Server::~Server(){}
@@ -35,7 +38,7 @@ void	Server::fillValues()
 	for (size_t i = 0; i < this->words.size(); i++)
 	{
 		if (this->words[i] == "name")
-			this->setName(i);
+			this->setName(i + 1);
 		else if (this->words[i] == "listen")
 			this->setListen(i);
 		else if (this->words[i] == "location")
@@ -52,20 +55,6 @@ void	Server::setName(size_t i)
 		if (this->words[i + 1] == ";")
 		{
 			this->name = this->words[i];
-			break;
-		}
-		i++;
-	}
-}
-
-void	Server::setListen(size_t i)
-{
-	while (i < this->words.size())
-	{
-		if (this->words[i + 1] == ";")
-		{
-			this->listen = this->words[i];
-			this->port = extractPort(this->words[i]);
 			break;
 		}
 		i++;
@@ -94,6 +83,21 @@ static	int	extractPort(const std::string &address)
 
 	return (port);
 }
+
+void	Server::setListen(size_t i)
+{
+	while (i < this->words.size())
+	{
+		if (this->words[i + 1] == ";")
+		{
+			this->listen = this->words[i];
+			this->port = extractPort(this->words[i]);
+			break;
+		}
+		i++;
+	}
+}
+
 
 void	Server::createLocation(size_t i)
 {
@@ -126,4 +130,12 @@ void	Server::setMaxBodySize(size_t i)
 		}
 		i++;
 	}
+}
+
+void	Server::serverRun()
+{
+	std::cout << this->name << std::endl;
+	std::cout << this->listen << std::endl;
+	std::cout << this->port << std::endl;
+	std::cout << this->maxBodySize << std::endl;
 }

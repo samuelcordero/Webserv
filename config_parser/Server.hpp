@@ -2,6 +2,8 @@
 
 #include "config_parser.hpp"
 
+class Location;
+
 class Server {
 	private:
 		std::string 												name;
@@ -11,7 +13,7 @@ class Server {
 		std::string													block;
 		std::vector<std::string>									words;
 		unsigned long												maxBodySize;
-		std::vector<std::pair <std::string, std::string>>			cgi;
+	//	std::vector<std::pair <std::string, std::string>>			cgi;
 
 	public:
 		Server(std::string serverBlock);
@@ -27,4 +29,5 @@ class Server {
 		void		setListen(size_t i);
 		void		createLocation(size_t i);
 		void		setMaxBodySize(size_t i);
+		void		serverRun();
 };

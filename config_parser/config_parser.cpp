@@ -45,6 +45,9 @@ std::vector<std::string> splitConfigFile(std::string configFile) { //split the s
 
 Parser::Parser(std::string FilePath){
 	this->filePath = FilePath;
+	this->trimComments();
+	this->splitWords();
+	this->setValues();
 }
 
 Parser::~Parser(){}
@@ -196,17 +199,15 @@ void	Parser::createServers()
 	for (size_t i = 0; i < Blocks.size(); i++)
 	{
 		this->Servers.push_back(Server(Blocks[i]));
-		std::cout << i << std::endl;
+		//std::cout << i << std::endl;
 		}
 }
 
-int	main()
+void	Parser::run()
 {
-	Parser *a = new Parser("../config/default.conf");
-
-	a->trimComments("../config/default.conf");
-	a->splitWords();
-	a->setValues();
-	
-	return 1;
+		for (size_t i = 0; i < this->Servers.size(); i++)
+		{
+			this->Servers[i].serverRun();
+	} 
 }
+

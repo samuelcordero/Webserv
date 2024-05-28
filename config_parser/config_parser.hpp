@@ -8,6 +8,7 @@
 #include <sstream>
 #include "Location.hpp"
 #include "Server.hpp"
+#include <cstdlib>
 
 enum	States{
 	START,
@@ -54,6 +55,7 @@ class Parser{
 		int		getStatus(std::string word, int prevStatus);
 		void	createServers();
 		void	setFilePath(std::string filePath);
+		void	run();
 };
 
 std::vector<std::string> splitConfigFile(std::string configFile);
