@@ -205,9 +205,11 @@ void	Parser::createServers()
 
 void	Parser::run()
 {
+	while (true) {
 		for (size_t i = 0; i < this->Servers.size(); i++)
 		{
 			this->Servers[i].serverRun();
-	} 
+		}
+	}
 }
 

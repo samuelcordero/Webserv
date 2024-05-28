@@ -13,10 +13,10 @@ Location::Location(std::vector<std::string> locationBlock)
 		else if (locationBlock[i] == "cgi")
 			this->setCgi(i + 1, locationBlock);
 	}
-	std::cout << this->cgi.first << " " << this->cgi.second << std::endl;
-	std::cout << this->uri << std::endl;
-	std::cout << this->flagsMethods << std::endl;
-	std::cout << this->index << std::endl;
+	//std::cout << this->cgi.first << " " << this->cgi.second << std::endl;
+	//std::cout << this->uri << std::endl;
+	//std::cout << this->flagsMethods << std::endl;
+	//std::cout << this->index << std::endl;
 }
 
 Location::~Location(){}

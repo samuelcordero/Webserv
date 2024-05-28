@@ -2,7 +2,7 @@
 
 int main ()
 {
-	Parser parse("../config/default.conf");
+	Parser parse("config/default.conf");
 
 	parse.run();
 }

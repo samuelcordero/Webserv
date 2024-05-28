@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config_parser.hpp"
+#include "TCPListener.hpp"
 
 class Location;
 
@@ -13,6 +14,7 @@ class Server {
 		std::string													block;
 		std::vector<std::string>									words;
 		unsigned long												maxBodySize;
+		TCPListener													*listener;
 	//	std::vector<std::pair <std::string, std::string>>			cgi;
 
 	public:

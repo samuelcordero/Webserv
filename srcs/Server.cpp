@@ -7,9 +7,12 @@ Server::Server(std::string serverBlock)
 	this->maxBodySize = 1000000;
 	this->splitBlock();
 	this->fillValues();
+	listener = new TCPListener(port);
 }
 
-Server::~Server(){}
+Server::~Server(){
+	//delete listener;  // hay algo en el parser que provoca un double free, arreglar para poder liberar la memoria del listner
+}
 
 
 void	Server::splitBlock()
@@ -134,8 +137,9 @@ void	Server::setMaxBodySize(size_t i)
 
 void	Server::serverRun()
 {
-	std::cout << this->name << std::endl;
+	/* std::cout << this->name << std::endl;
 	std::cout << this->listen << std::endl;
 	std::cout << this->port << std::endl;
-	std::cout << this->maxBodySize << std::endl;
+	std::cout << this->maxBodySize << std::endl; */
+	listener->run();
 }
