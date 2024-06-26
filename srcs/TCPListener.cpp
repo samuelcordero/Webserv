@@ -6,7 +6,7 @@
 /*   By: bazuara <bazuara@student.42madrid.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/15 13:02:58 by sacorder          #+#    #+#             */
-/*   Updated: 2024/06/26 10:51:14 by bazuara          ###   ########.fr       */
+/*   Updated: 2024/06/26 11:00:46 by bazuara          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -147,18 +147,10 @@ void TCPListener::mock_handler(int client_socket_fd)
 	std::string request(buffer, bytesRead);
 	std::cout << "---- RECEIVED REQUEST ----\n"
 			  << request << "---- REQUEST END ----\n";
-	std::cout << "---- PARSED REQUEST ----\n";
 	Request r = Request(request);
-	// std::cout << "Method: " << r.getMethod() << std::endl;
-	// std::cout << "URI: " << r.getUri() << std::endl;
-	// std::cout << "Body: " << r.getBody() << std::endl;
-	// // print all headers
-	// std::map<std::string, std::string> headers = r.getHeaders();
-	// for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); ++it) {
-	// 	std::cout << it->first << ": " << it->second << std::endl;
-	// }
-	std::cout << r << std::endl;
-	std::cout << "---- PARSED REQUEST END ----\n";
+	std::cout << "---- PARSED REQUEST ----\n"
+			  << r << std::endl
+			  << "---- PARSED REQUEST END ----\n";
 
 	// Send a response back to the client (THIS IS OBVIOUSLY A MOCK!)
 	std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 12\r\n\r\nHello World!";
