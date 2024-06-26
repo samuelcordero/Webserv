@@ -18,8 +18,9 @@ SRC =	srcs/config_parser.cpp \
 		srcs/Location.cpp \
 		srcs/Server.cpp \
 		srcs/main.cpp \
-		srcs/TCPListener.cpp\
-		srcs/Request.cpp
+		srcs/TCPListener.cpp \
+		srcs/Request.cpp \
+		srcs/Response.cpp
 OBJ = $(SRC:.cpp=.o)
 
 .PHONY: all clean fclean re
