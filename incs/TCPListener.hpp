@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   TCPListener.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sacorder <sacorder@student.42madrid.com    +#+  +:+       +#+        */
+/*   By: agserran <agserran@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/15 12:59:14 by sacorder          #+#    #+#             */
-/*   Updated: 2024/05/28 18:03:45 by sacorder         ###   ########.fr       */
+/*   Updated: 2024/06/26 16:55:45 by agserran         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #ifndef __TCPLISTENER_H__
 # define __TCPLISTENER_H__
 
+# include "Server.hpp"
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <sys/epoll.h>
@@ -29,6 +30,7 @@
 
 # define MAX_EVENTS 128
 
+class Server;
 class TCPListener {
 	private:
 		int							socket_fd;
@@ -37,11 +39,14 @@ class TCPListener {
 		int							epoll_fd;
 		epoll_event					event;
 		std::vector<epoll_event>	*events;
+		Server&						server;
 
 		void	mock_handler(int client_socket_fd);
 	public:
-		TCPListener(int port);
+		TCPListener(int port, Server& server);
 		~TCPListener();
+		TCPListener(const TCPListener& copy);
+		TCPListener& operator=(const TCPListener& copy);
 		void	run();
 };
 

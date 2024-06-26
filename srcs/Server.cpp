@@ -7,7 +7,25 @@ Server::Server(std::string serverBlock)
 	this->maxBodySize = 1000000;
 	this->splitBlock();
 	this->fillValues();
-	listener = new TCPListener(port);
+	listener = new TCPListener(port, *this);
+}
+
+Server& Server::operator=(const Server& copy)
+{
+	this->name = copy.name;
+	this->port = copy.port;
+	this->listen = copy.listen;
+	this->locations = copy.locations;
+	this->block = copy.block;
+	this->words = copy.words;
+	this->maxBodySize = copy.maxBodySize;
+	//this->cgi = copy.cgi;
+	return (*this);
+}
+
+Server::Server(const Server& copy)
+{
+	*this = copy;
 }
 
 Server::~Server(){

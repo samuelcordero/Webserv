@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   TCPListener.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: bazuara <bazuara@student.42madrid.com>     +#+  +:+       +#+        */
+/*   By: agserran <agserran@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/15 13:02:58 by sacorder          #+#    #+#             */
-/*   Updated: 2024/06/26 11:00:46 by bazuara          ###   ########.fr       */
+/*   Updated: 2024/06/26 17:18:59 by agserran         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 #include <sys/socket.h>
 #include "Request.hpp"
 
-TCPListener::TCPListener(int port) : port(port)
+TCPListener::TCPListener(int port, Server& server) : port(port), server(server)
 {
 	socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket_fd == -1)
@@ -68,6 +68,23 @@ TCPListener::TCPListener(int port) : port(port)
 	}
 	events = new std::vector<epoll_event>(MAX_EVENTS);
 	std::cout << "Server listening on port " << port << "...\n";
+}
+
+TCPListener& TCPListener::operator=(const TCPListener& copy)
+{
+	this->socket_fd = copy.socket_fd;
+	this->port = copy.port;
+	this->server_addr = copy.server_addr;
+	this->epoll_fd = copy.epoll_fd;
+	this->event = copy.event;
+	this->events = new std::vector<epoll_event>(MAX_EVENTS);
+	this->server = copy.server;
+	return (*this);
+}
+
+TCPListener::TCPListener(const TCPListener& copy) : server(copy.server)
+{
+	*this = copy;
 }
 
 TCPListener::~TCPListener()
@@ -145,6 +162,7 @@ void TCPListener::mock_handler(int client_socket_fd)
 
 	// Process the received data (parse the HTTP request and generate a response)
 	std::string request(buffer, bytesRead);
+	//logica
 	std::cout << "---- RECEIVED REQUEST ----\n"
 			  << request << "---- REQUEST END ----\n";
 	Request r = Request(request);
