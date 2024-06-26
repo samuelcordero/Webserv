@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: sacorder <sacorder@student.42madrid.com    +#+  +:+       +#+         #
+#    By: bazuara <bazuara@student.42madrid.com>     +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/02/04 17:08:31 by sacorder          #+#    #+#              #
-#    Updated: 2024/05/28 18:06:34 by sacorder         ###   ########.fr        #
+#    Updated: 2024/06/26 10:27:14 by bazuara          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -18,7 +18,8 @@ SRC =	srcs/config_parser.cpp \
 		srcs/Location.cpp \
 		srcs/Server.cpp \
 		srcs/main.cpp \
-		srcs/TCPListener.cpp
+		srcs/TCPListener.cpp\
+		srcs/Request.cpp
 OBJ = $(SRC:.cpp=.o)
 
 .PHONY: all clean fclean re

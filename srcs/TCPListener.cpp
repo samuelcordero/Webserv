@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   TCPListener.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sacorder <sacorder@student.42madrid.com    +#+  +:+       +#+        */
+/*   By: bazuara <bazuara@student.42madrid.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/15 13:02:58 by sacorder          #+#    #+#             */
-/*   Updated: 2024/05/28 18:15:17 by sacorder         ###   ########.fr       */
+/*   Updated: 2024/06/26 11:00:46 by bazuara          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,46 +15,54 @@
 #include <iterator>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include "Request.hpp"
 
-TCPListener::TCPListener(int port): port(port) {
+TCPListener::TCPListener(int port) : port(port)
+{
 	socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (socket_fd == -1) {
+	if (socket_fd == -1)
+	{
 		perror("socket");
 		exit(EXIT_FAILURE);
 	}
 
 	int reuse = 1;
-	if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse)) < 0) {
+	if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (const char *)&reuse, sizeof(reuse)) < 0)
+	{
 		perror("setsockopt(SO_REUSEADDR)");
 		exit(EXIT_FAILURE);
 	}
 
-	memset(&server_addr, 0, sizeof(server_addr)); //forbidden function
+	memset(&server_addr, 0, sizeof(server_addr)); // forbidden function
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(port);
 	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-	if (bind(socket_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
+	if (bind(socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
+	{
 		perror("bind");
 		exit(EXIT_FAILURE);
 	}
-	//create a new epoll
+	// create a new epoll
 	epoll_fd = epoll_create(1024);
-	if (epoll_fd == -1) {
+	if (epoll_fd == -1)
+	{
 		perror("epoll_create");
 		exit(EXIT_FAILURE);
 	}
-	
-	//assign listening socket to epoll
+
+	// assign listening socket to epoll
 	event.events = EPOLLIN;
 	event.data.fd = socket_fd;
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &event) == -1) {
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &event) == -1)
+	{
 		perror("epoll_ctl");
 		exit(EXIT_FAILURE);
-    }
-	
-	//start listening through the socket
-	if (listen(socket_fd, 10) == -1) {
+	}
+
+	// start listening through the socket
+	if (listen(socket_fd, 10) == -1)
+	{
 		perror("Listening failed");
 		exit(EXIT_FAILURE);
 	}
@@ -62,29 +70,35 @@ TCPListener::TCPListener(int port): port(port) {
 	std::cout << "Server listening on port " << port << "...\n";
 }
 
-TCPListener::~TCPListener() {
+TCPListener::~TCPListener()
+{
 	close(socket_fd);
 	close(epoll_fd);
 }
 
-void	TCPListener::run() {
-	//std::cout << "Server listening on port " << port << "...\n";
+void TCPListener::run()
+{
+	// std::cout << "Server listening on port " << port << "...\n";
 
 	// wait for epoll notification for fd ready
 	int nbr_fds = epoll_wait(epoll_fd, events->data(), events->size(), 0);
-	if (nbr_fds == -1) {
+	if (nbr_fds == -1)
+	{
 		perror("epoll_wait");
 		return;
 	}
-		
+
 	// loop through fds that are ready
-	for (int i = 0; i < nbr_fds; ++i) {
-		if ((*events)[i].data.fd == socket_fd) {
+	for (int i = 0; i < nbr_fds; ++i)
+	{
+		if ((*events)[i].data.fd == socket_fd)
+		{
 			// handle new con
 			struct sockaddr_in client_addr;
 			socklen_t client_addr_len = sizeof(client_addr);
-			int client_socket_fd = accept(socket_fd, (struct sockaddr*)&client_addr, &client_addr_len);
-			if (client_socket_fd == -1) {
+			int client_socket_fd = accept(socket_fd, (struct sockaddr *)&client_addr, &client_addr_len);
+			if (client_socket_fd == -1)
+			{
 				perror("Accept failed");
 				continue;
 			}
@@ -93,20 +107,24 @@ void	TCPListener::run() {
 			epoll_event client_event;
 			client_event.events = EPOLLIN | EPOLLET; // Use edge-triggered mode
 			client_event.data.fd = client_socket_fd;
-			if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_socket_fd, &client_event) == -1) {
+			if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_socket_fd, &client_event) == -1)
+			{
 				perror("epoll ctl");
 				close(client_socket_fd);
 				exit(EXIT_FAILURE);
 			}
 
 			std::cout << "Connection accepted from " << inet_ntoa(client_addr.sin_addr) << ":" << ntohs(client_addr.sin_port) << std::endl;
-		} else {
-			//handle client response
+		}
+		else
+		{
+			// handle client response
 			std::cout << "Handling response..." << std::endl;
 			mock_handler((*events)[i].data.fd);
-				
-			//delete from epoll ctr monitoring
-			if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, (*events)[i].data.fd, NULL) == -1) {
+
+			// delete from epoll ctr monitoring
+			if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, (*events)[i].data.fd, NULL) == -1)
+			{
 				perror("epoll_ctl");
 			}
 			close((*events)[i].data.fd);
@@ -114,18 +132,25 @@ void	TCPListener::run() {
 	}
 }
 
-void	TCPListener::mock_handler(int client_socket_fd) {
+void TCPListener::mock_handler(int client_socket_fd)
+{
 	char buffer[1024];
 
 	int bytesRead = recv(client_socket_fd, buffer, sizeof(buffer), 0);
-	if (bytesRead == -1) {
+	if (bytesRead == -1)
+	{
 		perror("recv");
 		return;
 	}
 
 	// Process the received data (parse the HTTP request and generate a response)
 	std::string request(buffer, bytesRead);
-	std::cout << "---- RECEIVED REQUEST ----\n" << request << "---- REQUEST END ----\n";
+	std::cout << "---- RECEIVED REQUEST ----\n"
+			  << request << "---- REQUEST END ----\n";
+	Request r = Request(request);
+	std::cout << "---- PARSED REQUEST ----\n"
+			  << r << std::endl
+			  << "---- PARSED REQUEST END ----\n";
 
 	// Send a response back to the client (THIS IS OBVIOUSLY A MOCK!)
 	std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 12\r\n\r\nHello World!";
