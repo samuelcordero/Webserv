@@ -12,6 +12,7 @@
 #include <map>
 #include <iostream>
 
+
 class Request
 {
     private:
@@ -29,6 +30,7 @@ class Request
         std::string getUri() const;
         std::map<std::string, std::string> getHeaders() const;
         std::string getBody() const;
+		int			getNumMethod() const;
 };
 
 std::ostream& operator<<(std::ostream&, const Request&);
