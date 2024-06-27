@@ -15,8 +15,6 @@
 #include <iterator>
 #include <sys/epoll.h>
 #include <sys/socket.h>
-#include "Request.hpp"
-#include "Response.hpp"
 
 TCPListener::TCPListener(int port, Server *server) : port(port) {
 	this->server = server;
@@ -27,7 +25,7 @@ TCPListener::TCPListener(int port, Server *server) : port(port) {
 
 TCPListener& TCPListener::operator=(const TCPListener& copy)
 {
-	std::cerr << "called equal op tcp listener\n";
+	//std::cerr << "called equal op tcp listener\n";
 	this->port = copy.port;
 	this->server = copy.server;
 	epoll_fd = -1;
@@ -36,10 +34,11 @@ TCPListener& TCPListener::operator=(const TCPListener& copy)
 	return (*this);
 }
 
-TCPListener::TCPListener(const TCPListener& copy) : server(copy.server)
+TCPListener::TCPListener(const TCPListener& copy, Server *s) : server(copy.server)
 {
-	std::cerr << "called copy cons tcp listener\n";
+	//std::cerr << "called copy cons tcp listener\n";
 	*this = copy;
+	server = s;
 }
 
 TCPListener::~TCPListener()
@@ -173,33 +172,58 @@ void TCPListener::mock_handler(int client_socket_fd)
 
 	// Process the received data (parse the HTTP request and generate a response)
 	std::string request(buffer, bytesRead);
-	//logica
-	std::cout << "---- RECEIVED REQUEST ----\n"
-			  << request << "---- REQUEST END ----\n";
+	//std::cout << "---- RECEIVED REQUEST ----\n"
+	//		  << request << "---- REQUEST END ----\n";
 	Request r = Request(request);
-	Response resp = analizer(r);
 	std::cout << "---- PARSED REQUEST ----\n"
 			  << r << std::endl
 			  << "---- PARSED REQUEST END ----\n";
+	//logica
+	Response resp = analizer(r);
+
+	std::cout << "Response built succesfully\n";
+
+	std::cout << resp;
 
 	// Send a response back to the client (THIS IS OBVIOUSLY A MOCK!)
 	std::string message = resp.getMessage();
 	send(client_socket_fd, message.c_str(), message.length(), 0);
 }
 
+std::pair<std::string, std::string>	splitUri(std::string uri) {
+	std::size_t pos = uri.find_last_of('/');
+
+    if (pos == std::string::npos)
+        return std::make_pair("", uri);
+    else if (pos == uri.length())
+        return std::make_pair(uri, "");
+    else
+        return std::make_pair(uri.substr(0, pos + 1), uri.substr(pos + 1));
+}
+
 Response TCPListener::analizer(const Request& request)
 {
 	std::vector<Location> &tmp = this->server->getLocations();
-	
+
+	std::pair<std::string, std::string> uri_pair = splitUri(request.getUri());
+
+	std::cerr << "Building response for resource " << uri_pair.second << " at location " << uri_pair.first << std::endl;
 	for (size_t i = 0; i < tmp.size(); i++)
 	{
-		if (tmp[i].getUri() == request.getUri())
+		if (tmp[i].getUri() == uri_pair.first)
 		{
-			if (tmp[i].getMethods() & request.getNumMethod() == request.getNumMethod())
+			std::cerr << "requested method: " << request.getNumMethod() << std::endl;
+
+			if ((tmp[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
-				Response::Response(200, "OK", "");		
+				return (Response(200,"OK", "This should be file contents!"));	
+			}
+			else
+			{
+				return (Response(405, "405 Error\nMethod Not Allowed", "The requested method isn't allowed"));
 			}
 			break;
-		}	
+		}
 	}
+	return (Response(404, "Not Found", "404 Error\nWe tried, but couldn't find :("));
 }

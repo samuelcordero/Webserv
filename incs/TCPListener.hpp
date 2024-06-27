@@ -15,6 +15,8 @@
 # define __TCPLISTENER_H__
 
 # include "Server.hpp"
+# include "Response.hpp"
+# include "Request.hpp"
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <sys/epoll.h>
@@ -27,10 +29,13 @@
 # include <cerrno>
 # include <cstdio>
 # include <cstring>
+# include <utility>
 
 # define MAX_EVENTS 128
 
+class Request;
 class Server;
+class Response;
 
 class TCPListener {
 	private:
@@ -46,7 +51,7 @@ class TCPListener {
 	public:
 		TCPListener(int port, Server *server);
 		~TCPListener();
-		TCPListener(const TCPListener& copy);
+		TCPListener(const TCPListener& copy, Server *s);
 		TCPListener& operator=(const TCPListener& copy);
 		void	start();
 		void	run();

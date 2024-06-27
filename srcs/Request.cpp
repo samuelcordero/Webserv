@@ -100,12 +100,13 @@ std::ostream &operator<<(std::ostream &os, const Request &r)
     return os;
 }
 
-int	Request::getNumMethod()
+int	Request::getNumMethod() const
 {
+	if (this->method == "POST")
+		return (1);
 	if (this->method == "GET")
 		return (2);
 	if (this->method == "DELETE")
 		return (4);
-	if (this->method == "POST")
-		return (1);
+	return (8);
 }
