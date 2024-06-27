@@ -6,7 +6,7 @@
 /*   By: agserran <agserran@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/15 13:02:58 by sacorder          #+#    #+#             */
-/*   Updated: 2024/06/26 17:18:59 by agserran         ###   ########.fr       */
+/*   Updated: 2024/06/27 16:48:45 by agserran         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -177,13 +177,29 @@ void TCPListener::mock_handler(int client_socket_fd)
 	std::cout << "---- RECEIVED REQUEST ----\n"
 			  << request << "---- REQUEST END ----\n";
 	Request r = Request(request);
+	Response resp = analizer(r);
 	std::cout << "---- PARSED REQUEST ----\n"
 			  << r << std::endl
 			  << "---- PARSED REQUEST END ----\n";
 
 	// Send a response back to the client (THIS IS OBVIOUSLY A MOCK!)
-	Response response(404, "Not found", "404: couldn't find requested resource");
-	std::cout << response;
-	std::string message = response.getMessage();
+	std::string message = resp.getMessage();
 	send(client_socket_fd, message.c_str(), message.length(), 0);
+}
+
+Response TCPListener::analizer(const Request& request)
+{
+	std::vector<Location> &tmp = this->server->getLocations();
+	
+	for (size_t i = 0; i < tmp.size(); i++)
+	{
+		if (tmp[i].getUri() == request.getUri())
+		{
+			if (tmp[i].getMethods() & request.getNumMethod() == request.getNumMethod())
+			{
+				Response::Response(200, "OK", "");		
+			}
+			break;
+		}	
+	}
 }

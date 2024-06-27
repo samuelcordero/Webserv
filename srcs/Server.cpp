@@ -136,6 +136,11 @@ void	Server::createLocation(size_t i)
 	this->locations.push_back(Location(aux));
 }
 
+std::vector<Location> &Server::getLocations()
+{
+	return (this->locations);
+}
+
 void	Server::setMaxBodySize(size_t i)
 {
 	while (i < this->words.size())

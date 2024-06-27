@@ -13,6 +13,8 @@ Location::Location(std::vector<std::string> locationBlock)
 			this->setMethods(i + 1, locationBlock);
 		else if (locationBlock[i] == "cgi")
 			this->setCgi(i + 1, locationBlock);
+		else if (locationBlock[i] == "root")
+			this->setRoot(i + 1, locationBlock);
 	}
 	std::cout << this->cgi.first << " " << this->cgi.second << std::endl;
 	std::cout << this->uri << std::endl;
@@ -21,6 +23,19 @@ Location::Location(std::vector<std::string> locationBlock)
 }
 
 Location::~Location(){}
+
+void	Location::setRoot(size_t i, std::vector<std::string> &locationBlock)
+{
+	while (i < locationBlock.size())
+	{
+		if (locationBlock[i + 1] == ";")
+		{
+			this->root = locationBlock[i];
+			break;
+		}
+		i++;
+	}
+}
 
 void	Location::setIndex(size_t i, std::vector<std::string> &locationBlock)
 {
@@ -62,3 +77,19 @@ void	Location::setCgi(size_t i, std::vector<std::string> &locationBlock)
 		}		
 	}
 }
+
+int	Location::getMethods()
+{
+	return (this->flagsMethods);
+}
+
+std::string	Location::getUri()
+{
+	return (this->uri);
+}
+
+std::string Location::getRoot()
+{
+	return (this->root);
+}
+
