@@ -4,7 +4,9 @@
 #include "TCPListener.hpp"
 
 class Location;
+
 class TCPListener;
+
 class Server {
 	private:
 		std::string 												name;
@@ -34,4 +36,5 @@ class Server {
 		void		createLocation(size_t i);
 		void		setMaxBodySize(size_t i);
 		void		serverRun();
+		void		start();
 };

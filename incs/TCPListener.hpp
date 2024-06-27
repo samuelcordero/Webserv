@@ -31,6 +31,7 @@
 # define MAX_EVENTS 128
 
 class Server;
+
 class TCPListener {
 	private:
 		int							socket_fd;
@@ -39,14 +40,15 @@ class TCPListener {
 		int							epoll_fd;
 		epoll_event					event;
 		std::vector<epoll_event>	*events;
-		Server&						server;
+		Server						*server;
 
 		void	mock_handler(int client_socket_fd);
 	public:
-		TCPListener(int port, Server& server);
+		TCPListener(int port, Server *server);
 		~TCPListener();
 		TCPListener(const TCPListener& copy);
 		TCPListener& operator=(const TCPListener& copy);
+		void	start();
 		void	run();
 };
 

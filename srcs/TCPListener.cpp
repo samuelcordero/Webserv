@@ -17,8 +17,41 @@
 #include <sys/socket.h>
 #include "Request.hpp"
 
-TCPListener::TCPListener(int port, Server& server) : port(port), server(server)
+TCPListener::TCPListener(int port, Server *server) : port(port) {
+	this->server = server;
+	epoll_fd = -1;
+	socket_fd = -1;
+	events = NULL;
+}
+
+TCPListener& TCPListener::operator=(const TCPListener& copy)
 {
+	std::cerr << "called equal op tcp listener\n";
+	this->port = copy.port;
+	this->server = copy.server;
+	epoll_fd = -1;
+	socket_fd = -1;
+	events = NULL;
+	return (*this);
+}
+
+TCPListener::TCPListener(const TCPListener& copy) : server(copy.server)
+{
+	std::cerr << "called copy cons tcp listener\n";
+	*this = copy;
+}
+
+TCPListener::~TCPListener()
+{
+	if (socket_fd > 0)
+		close(socket_fd);
+	if (epoll_fd > 0)
+		close(epoll_fd);
+	if (events)
+		delete events;
+}
+
+void TCPListener::start() {
 	socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket_fd == -1)
 	{
@@ -68,29 +101,6 @@ TCPListener::TCPListener(int port, Server& server) : port(port), server(server)
 	}
 	events = new std::vector<epoll_event>(MAX_EVENTS);
 	std::cout << "Server listening on port " << port << "...\n";
-}
-
-TCPListener& TCPListener::operator=(const TCPListener& copy)
-{
-	this->socket_fd = copy.socket_fd;
-	this->port = copy.port;
-	this->server_addr = copy.server_addr;
-	this->epoll_fd = copy.epoll_fd;
-	this->event = copy.event;
-	this->events = new std::vector<epoll_event>(MAX_EVENTS);
-	this->server = copy.server;
-	return (*this);
-}
-
-TCPListener::TCPListener(const TCPListener& copy) : server(copy.server)
-{
-	*this = copy;
-}
-
-TCPListener::~TCPListener()
-{
-	close(socket_fd);
-	close(epoll_fd);
 }
 
 void TCPListener::run()

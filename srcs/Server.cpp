@@ -7,11 +7,12 @@ Server::Server(std::string serverBlock)
 	this->maxBodySize = 1000000;
 	this->splitBlock();
 	this->fillValues();
-	listener = new TCPListener(port, *this);
+	listener = new TCPListener(port, this);
 }
 
 Server& Server::operator=(const Server& copy)
 {
+	std::cerr << "called equal op server\n";
 	this->name = copy.name;
 	this->port = copy.port;
 	this->listen = copy.listen;
@@ -19,17 +20,19 @@ Server& Server::operator=(const Server& copy)
 	this->block = copy.block;
 	this->words = copy.words;
 	this->maxBodySize = copy.maxBodySize;
+	this->listener = new TCPListener(*copy.listener);
 	//this->cgi = copy.cgi;
 	return (*this);
 }
 
 Server::Server(const Server& copy)
 {
+	std::cerr << "called copy cons server\n";
 	*this = copy;
 }
 
-Server::~Server(){
-	//delete listener;  // hay algo en el parser que provoca un double free, arreglar para poder liberar la memoria del listner
+Server::~Server() {
+	delete listener;
 }
 
 
@@ -160,4 +163,8 @@ void	Server::serverRun()
 	std::cout << this->port << std::endl;
 	std::cout << this->maxBodySize << std::endl; */
 	listener->run();
+}
+
+void	Server::start() {
+	listener->start();
 }
