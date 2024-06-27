@@ -3,3 +3,4 @@ a.out
 */*.o
 webserv
 .idea/
+__pycache__/

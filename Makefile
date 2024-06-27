@@ -6,7 +6,7 @@
 #    By: bazuara <bazuara@student.42madrid.com>     +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/02/04 17:08:31 by sacorder          #+#    #+#              #
-#    Updated: 2024/06/26 10:27:14 by bazuara          ###   ########.fr        #
+#    Updated: 2024/06/27 10:35:04 by bazuara          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -21,8 +21,9 @@ SRC =	srcs/config_parser.cpp \
 		srcs/TCPListener.cpp\
 		srcs/Request.cpp
 OBJ = $(SRC:.cpp=.o)
+TEST_SCRIPT = tests/test.py
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re start_server test
 
 all: $(NAME)
 
@@ -37,6 +38,13 @@ clean:
 
 fclean: clean
 	$(RM) $(NAME)
+# start the server and redirects all outputs to null
+start_server:
+	@./$(NAME) 2> /dev/null 1> /dev/null &
+
+test: start_server
+	@pytest $(TEST_SCRIPT)
+	@pkill $(NAME)
 
 re:: fclean
 re:: all
