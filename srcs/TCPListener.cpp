@@ -16,6 +16,7 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include "Request.hpp"
+#include "Response.hpp"
 
 TCPListener::TCPListener(int port, Server *server) : port(port) {
 	this->server = server;
@@ -181,6 +182,8 @@ void TCPListener::mock_handler(int client_socket_fd)
 			  << "---- PARSED REQUEST END ----\n";
 
 	// Send a response back to the client (THIS IS OBVIOUSLY A MOCK!)
-	std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 12\r\n\r\nHello World!";
-	send(client_socket_fd, response.c_str(), response.length(), 0);
+	Response response(404, "Not found", "404: couldn't find requested resource");
+	std::cout << response;
+	std::string message = response.getMessage();
+	send(client_socket_fd, message.c_str(), message.length(), 0);
 }
