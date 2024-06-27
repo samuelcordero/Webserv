@@ -6,7 +6,7 @@
 #    By: bazuara <bazuara@student.42madrid.com>     +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/02/04 17:08:31 by sacorder          #+#    #+#              #
-#    Updated: 2024/06/27 09:59:19 by bazuara          ###   ########.fr        #
+#    Updated: 2024/06/27 10:35:04 by bazuara          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -38,13 +38,13 @@ clean:
 
 fclean: clean
 	$(RM) $(NAME)
-
+# start the server and redirects all outputs to null
 start_server:
-	./$(NAME) &
+	@./$(NAME) 2> /dev/null 1> /dev/null &
 
 test: start_server
-	python3 $(TEST_SCRIPT)
-	pkill -f $(NAME)  # Stop the server after tests
+	@pytest $(TEST_SCRIPT)
+	@pkill $(NAME)
 
 re:: fclean
 re:: all

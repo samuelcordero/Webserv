@@ -1,15 +1,9 @@
-from selenium import webdriver
+import pytest
+import requests
 
-# creates a new firefox sesion
-def test_web_server():
-    opts = webdriver.FirefoxOptions()
-    opts.add_argument("--headless")
-    serv = webdriver.FirefoxService( executable_path='/usr/local/bin/geckodriver' )
-    driver = webdriver.Firefox( options=opts, service=serv )
-    print("Testing web server")
-    driver.get("http://localhost:8080")
-    driver.close()
+# checks for Hello World! in the root page
+def test_root_page_content():
+    response = requests.get("http://localhost:8080")
+    assert response.status_code == 200
+    assert "Hello World!" in response.text
 
-
-if __name__ == "__main__":
-    test_web_server()
