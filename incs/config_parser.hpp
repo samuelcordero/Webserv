@@ -35,7 +35,6 @@ const	std::string keywords[] = {
 	"methods",
 	"index",
 	"Max_Body_Size",
-	"accepted_methods"
 };
 
 class Parser{
