@@ -1,22 +1,23 @@
 #include "Location.hpp"
 
 Location::Location(std::vector<std::string> locationBlock)
-{	
+{
+	flagsMethods = 0;
 	for (size_t i = 0;i < locationBlock.size(); i++)
 	{
 		if (locationBlock[i][0] == '/')
 			this->uri = locationBlock[i];
 		else if (locationBlock[i] == "index")
 			this->setIndex(i + 1, locationBlock);
-		else if (locationBlock[i] == "accepted_methods")
+		else if (locationBlock[i] == "methods")
 			this->setMethods(i + 1, locationBlock);
 		else if (locationBlock[i] == "cgi")
 			this->setCgi(i + 1, locationBlock);
 	}
-	//std::cout << this->cgi.first << " " << this->cgi.second << std::endl;
-	//std::cout << this->uri << std::endl;
-	//std::cout << this->flagsMethods << std::endl;
-	//std::cout << this->index << std::endl;
+	std::cout << this->cgi.first << " " << this->cgi.second << std::endl;
+	std::cout << this->uri << std::endl;
+	std::cout << this->flagsMethods << std::endl;
+	std::cout << this->index << std::endl;
 }
 
 Location::~Location(){}
@@ -36,7 +37,7 @@ void	Location::setIndex(size_t i, std::vector<std::string> &locationBlock)
 
 void	Location::setMethods(size_t i, const std::vector<std::string> &locationBlock)
 {
-	while (i < locationBlock.size() && locationBlock[i] != ";")
+	while (locationBlock[i] != ";")
 	{
 		if (locationBlock[i] == "POST")
 			this->flagsMethods |= 1;
@@ -45,10 +46,8 @@ void	Location::setMethods(size_t i, const std::vector<std::string> &locationBloc
 		else if (locationBlock[i] == "DELETE")
 			this->flagsMethods |= 4;
 		else
-			{
-				std::cerr << "Method not suported: " << locationBlock[i] << std::endl;
-				i++;
-			}
+			std::cerr << "Method not suported: " << locationBlock[i] << std::endl;
+		i++;
 	}
 }
 

@@ -200,11 +200,15 @@ void	Parser::createServers()
 	{
 		this->Servers.push_back(Server(Blocks[i]));
 		//std::cout << i << std::endl;
-		}
+	}
 }
 
 void	Parser::run()
 {
+	std::cerr << "Starting servers...\n";
+	for (size_t i = 0; i < this->Servers.size(); i++)
+		this->Servers[i].start();
+	std::cerr << "Started " << this->Servers.size() << " servers!\n";
 	while (true) {
 		for (size_t i = 0; i < this->Servers.size(); i++)
 		{

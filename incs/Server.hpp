@@ -5,6 +5,8 @@
 
 class Location;
 
+class TCPListener;
+
 class Server {
 	private:
 		std::string 												name;
@@ -20,6 +22,8 @@ class Server {
 	public:
 		Server(std::string serverBlock);
 		~Server();
+		Server& operator=(const Server& copy);
+		Server(const Server& copy);
 		std::string getName();
 		int getPort();
 		//std::vector<Location> getLocations();
@@ -32,4 +36,5 @@ class Server {
 		void		createLocation(size_t i);
 		void		setMaxBodySize(size_t i);
 		void		serverRun();
+		void		start();
 };
