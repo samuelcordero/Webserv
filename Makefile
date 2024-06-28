@@ -6,7 +6,7 @@
 #    By: bazuara <bazuara@student.42madrid.com>     +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/02/04 17:08:31 by sacorder          #+#    #+#              #
-#    Updated: 2024/06/28 12:08:21 by bazuara          ###   ########.fr        #
+#    Updated: 2024/07/02 12:30:45 by bazuara          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -41,7 +41,7 @@ clean:
 fclean: clean
 	$(RM) $(NAME)
 # start the server and redirects all outputs to null
-start_server:
+start_server: $(NAME)
 	@./$(NAME) 2> /dev/null 1> /dev/null &
 
 test: start_server
