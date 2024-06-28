@@ -6,7 +6,7 @@
 #    By: bazuara <bazuara@student.42madrid.com>     +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/02/04 17:08:31 by sacorder          #+#    #+#              #
-#    Updated: 2024/06/27 10:35:04 by bazuara          ###   ########.fr        #
+#    Updated: 2024/06/28 12:08:21 by bazuara          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -20,7 +20,8 @@ SRC =	srcs/config_parser.cpp \
 		srcs/main.cpp \
 		srcs/TCPListener.cpp \
 		srcs/Request.cpp \
-		srcs/Response.cpp
+		srcs/Response.cpp \
+		srcs/CgiHandler.cpp
 OBJ = $(SRC:.cpp=.o)
 TEST_SCRIPT = tests/test.py
 
