@@ -26,7 +26,7 @@ class Server {
 		Server(const Server& copy);
 		std::string getName();
 		int getPort();
-		//std::vector<Location> getLocations();
+		std::vector<Location> &getLocations();
 		void		splitBlock();
 		int			setAuto();
 		int			getStatus(std::string word, int prevStatus);

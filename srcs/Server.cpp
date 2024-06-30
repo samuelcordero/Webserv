@@ -12,22 +12,24 @@ Server::Server(std::string serverBlock)
 
 Server& Server::operator=(const Server& copy)
 {
-	std::cerr << "called equal op server\n";
+	//std::cerr << "called equal op server\n";
 	this->name = copy.name;
 	this->port = copy.port;
 	this->listen = copy.listen;
-	this->locations = copy.locations;
+	for (size_t i = 0; i < copy.locations.size(); ++i) {
+		this->locations.push_back(Location(copy.locations[i]));
+	}
 	this->block = copy.block;
 	this->words = copy.words;
 	this->maxBodySize = copy.maxBodySize;
-	this->listener = new TCPListener(*copy.listener);
+	this->listener = new TCPListener(*copy.listener, this);
 	//this->cgi = copy.cgi;
 	return (*this);
 }
 
 Server::Server(const Server& copy)
 {
-	std::cerr << "called copy cons server\n";
+	//std::cerr << "called copy cons server\n";
 	*this = copy;
 }
 
@@ -134,6 +136,11 @@ void	Server::createLocation(size_t i)
 		i++;	
 	}
 	this->locations.push_back(Location(aux));
+}
+
+std::vector<Location> &Server::getLocations()
+{
+	return (this->locations);
 }
 
 void	Server::setMaxBodySize(size_t i)

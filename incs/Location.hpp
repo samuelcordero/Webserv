@@ -2,24 +2,29 @@
 
 #include "config_parser.hpp"
 
-#define POST 1
-#define GET  2
-#define DELETE 4
+enum Methods {
+	POST = 1,
+	GET = 2,
+	DELETE = 4
+};
 
 class Location {
 	private:
 		std::string							index;
 		std::string 						uri;
+		std::string							root;
 		int									flagsMethods;
 		std::pair<std::string, std::string>	cgi;
-	
 	public:
 		Location(std::vector<std::string> locationBlock);
+		Location(const Location &other);
 		~Location();
-		std::string					getPath();
+		std::string					getUri();
 		std::string					getRoot();
-		std::vector<std::string>	getMethods();	
-		void						setMethods(size_t i, const std::vector<std::string> &locationBlock);
-		void						setIndex(size_t i, std::vector<std::string> &locationBlock);
-		void						setCgi(size_t i, std::vector<std::string> &locationBlock);
+		int							getMethods();	
+		size_t						setMethods(size_t i, const std::vector<std::string> &locationBlock);
+		size_t						setIndex(size_t i, std::vector<std::string> &locationBlock);
+		size_t						setCgi(size_t i, std::vector<std::string> &locationBlock);
+		size_t						setRoot(size_t i, std::vector<std::string> &locationBlock);
+		Location					&operator=(const Location &other);
 };

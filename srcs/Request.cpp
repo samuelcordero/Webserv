@@ -99,3 +99,14 @@ std::ostream &operator<<(std::ostream &os, const Request &r)
     os << "Body: " << r.getBody() << std::endl;
     return os;
 }
+
+int	Request::getNumMethod() const
+{
+	if (this->method == "POST")
+		return (1);
+	if (this->method == "GET")
+		return (2);
+	if (this->method == "DELETE")
+		return (4);
+	return (8);
+}

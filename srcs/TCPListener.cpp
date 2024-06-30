@@ -6,7 +6,7 @@
 /*   By: agserran <agserran@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/15 13:02:58 by sacorder          #+#    #+#             */
-/*   Updated: 2024/06/26 17:18:59 by agserran         ###   ########.fr       */
+/*   Updated: 2024/06/27 16:48:45 by agserran         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,8 +15,6 @@
 #include <iterator>
 #include <sys/epoll.h>
 #include <sys/socket.h>
-#include "Request.hpp"
-#include "Response.hpp"
 
 TCPListener::TCPListener(int port, Server *server) : port(port) {
 	this->server = server;
@@ -27,7 +25,7 @@ TCPListener::TCPListener(int port, Server *server) : port(port) {
 
 TCPListener& TCPListener::operator=(const TCPListener& copy)
 {
-	std::cerr << "called equal op tcp listener\n";
+	//std::cerr << "called equal op tcp listener\n";
 	this->port = copy.port;
 	this->server = copy.server;
 	epoll_fd = -1;
@@ -36,10 +34,11 @@ TCPListener& TCPListener::operator=(const TCPListener& copy)
 	return (*this);
 }
 
-TCPListener::TCPListener(const TCPListener& copy) : server(copy.server)
+TCPListener::TCPListener(const TCPListener& copy, Server *s) : server(copy.server)
 {
-	std::cerr << "called copy cons tcp listener\n";
+	//std::cerr << "called copy cons tcp listener\n";
 	*this = copy;
+	server = s;
 }
 
 TCPListener::~TCPListener()
@@ -173,17 +172,70 @@ void TCPListener::mock_handler(int client_socket_fd)
 
 	// Process the received data (parse the HTTP request and generate a response)
 	std::string request(buffer, bytesRead);
-	//logica
-	std::cout << "---- RECEIVED REQUEST ----\n"
-			  << request << "---- REQUEST END ----\n";
+	//std::cout << "---- RECEIVED REQUEST ----\n"
+	//		  << request << "---- REQUEST END ----\n";
 	Request r = Request(request);
 	std::cout << "---- PARSED REQUEST ----\n"
 			  << r << std::endl
 			  << "---- PARSED REQUEST END ----\n";
+	//logica
+	Response resp = analizer(r);
+
+	std::cout << "Response built succesfully\n";
+
+	std::cout << resp;
 
 	// Send a response back to the client (THIS IS OBVIOUSLY A MOCK!)
-	Response response(404, "Not found", "404: couldn't find requested resource");
-	std::cout << response;
-	std::string message = response.getMessage();
+	std::string message = resp.getMessage();
 	send(client_socket_fd, message.c_str(), message.length(), 0);
+}
+
+std::pair<std::string, std::string>	splitUri(std::string uri) {
+	std::size_t pos = uri.find_last_of('/');
+
+    if (pos == std::string::npos)
+        return std::make_pair("", uri);
+    else if (pos == uri.length())
+        return std::make_pair(uri, "");
+    else
+        return std::make_pair(uri.substr(0, pos + 1), uri.substr(pos + 1));
+}
+
+Response TCPListener::analizer(const Request& request)
+{
+	std::vector<Location> &tmp = this->server->getLocations();
+
+	std::pair<std::string, std::string> uri_pair = splitUri(request.getUri());
+
+	std::cerr << "Building response for resource " << uri_pair.second << " at location " << uri_pair.first << std::endl;
+	for (size_t i = 0; i < tmp.size(); i++)
+	{
+		if (tmp[i].getUri() == uri_pair.first)
+		{
+			std::cerr << "requested method: " << request.getNumMethod() << std::endl;
+			if ((tmp[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
+			{
+                std::string file_path = tmp[i].getRoot() + "/" + uri_pair.second;
+				std::cerr << "opening file " << file_path << std::endl;
+
+                std::ifstream file(file_path.c_str());
+
+                if (file.is_open()) {
+                    std::stringstream buffer;
+                    buffer << file.rdbuf();
+                    std::string file_contents = buffer.str();
+                    file.close();
+                    return Response(200, "OK", file_contents);
+                } else {
+                    return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.");
+                }
+			}
+			else
+			{
+				return (Response(405, "Method Not Allowed", "405 Error\nThe requested method isn't allowed"));
+			}
+			break;
+		}
+	}
+	return (Response(404, "Not Found", "404 Error\nWe tried, but couldn't find :("));
 }
