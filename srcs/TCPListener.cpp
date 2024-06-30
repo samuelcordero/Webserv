@@ -213,14 +213,26 @@ Response TCPListener::analizer(const Request& request)
 		if (tmp[i].getUri() == uri_pair.first)
 		{
 			std::cerr << "requested method: " << request.getNumMethod() << std::endl;
-
 			if ((tmp[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
-				return (Response(200,"OK", "This should be file contents!"));	
+                std::string file_path = tmp[i].getRoot() + "/" + uri_pair.second;
+				std::cerr << "opening file " << file_path << std::endl;
+
+                std::ifstream file(file_path.c_str());
+
+                if (file.is_open()) {
+                    std::stringstream buffer;
+                    buffer << file.rdbuf();
+                    std::string file_contents = buffer.str();
+                    file.close();
+                    return Response(200, "OK", file_contents);
+                } else {
+                    return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.");
+                }
 			}
 			else
 			{
-				return (Response(405, "405 Error\nMethod Not Allowed", "The requested method isn't allowed"));
+				return (Response(405, "Method Not Allowed", "405 Error\nThe requested method isn't allowed"));
 			}
 			break;
 		}
