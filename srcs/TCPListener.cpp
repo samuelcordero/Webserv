@@ -169,7 +169,8 @@ void TCPListener::mock_handler(int client_socket_fd)
 		perror("recv");
 		return;
 	}
-
+	if (bytesRead == 0)
+		return ; //wtf
 	// Process the received data (parse the HTTP request and generate a response)
 	std::string request(buffer, bytesRead);
 	//std::cout << "---- RECEIVED REQUEST ----\n"
@@ -203,19 +204,21 @@ std::pair<std::string, std::string>	splitUri(std::string uri) {
 
 Response TCPListener::analizer(const Request& request)
 {
-	std::vector<Location> &tmp = this->server->getLocations();
+	std::vector<Location> &locations = this->server->getLocations();
 
 	std::pair<std::string, std::string> uri_pair = splitUri(request.getUri());
 
 	std::cerr << "Building response for resource " << uri_pair.second << " at location " << uri_pair.first << std::endl;
-	for (size_t i = 0; i < tmp.size(); i++)
+	for (size_t i = 0; i < locations.size(); i++)
 	{
-		if (tmp[i].getUri() == uri_pair.first)
+		if (locations[i].getUri() == uri_pair.first)
 		{
+			if (uri_pair.second == "")
+				uri_pair.second = locations[i].getIndex();
 			std::cerr << "requested method: " << request.getNumMethod() << std::endl;
-			if ((tmp[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
+			if ((locations[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
-                std::string file_path = tmp[i].getRoot() + "/" + uri_pair.second;
+                std::string file_path = locations[i].getRoot() + "/" + uri_pair.second;
 				std::cerr << "opening file " << file_path << std::endl;
 
                 std::ifstream file(file_path.c_str());
