@@ -111,3 +111,7 @@ std::string Location::getRoot()
 	return (this->root);
 }
 
+std::string Location::getIndex()
+{
+	return (this->index);
+}

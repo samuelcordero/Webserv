@@ -169,7 +169,8 @@ void TCPListener::mock_handler(int client_socket_fd)
 		perror("recv");
 		return;
 	}
-
+	if (bytesRead == 0)
+		return ; //wtf
 	// Process the received data (parse the HTTP request and generate a response)
 	std::string request(buffer, bytesRead);
 	//std::cout << "---- RECEIVED REQUEST ----\n"
@@ -242,24 +243,26 @@ static Response Post(std::pair<std::string, std::string> uri_pair, Location& loc
 
 Response TCPListener::analizer(const Request& request)
 {
-	std::vector<Location> &tmp = this->server->getLocations();
+	std::vector<Location> &locations = this->server->getLocations();
 
 	std::pair<std::string, std::string> uri_pair = splitUri(request.getUri());
 
 	std::cerr << "Building response for resource " << uri_pair.second << " at location " << uri_pair.first << std::endl;
-	for (size_t i = 0; i < tmp.size(); i++)
+	for (size_t i = 0; i < locations.size(); i++)
 	{
-		if (tmp[i].getUri() == uri_pair.first)
+		if (locations[i].getUri() == uri_pair.first)
 		{
+			if (uri_pair.second == "")
+				uri_pair.second = locations[i].getIndex();
 			std::cerr << "requested method: " << request.getNumMethod() << std::endl;
-			if ((tmp[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
+			if ((locations[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
-                if (request.getNumMethod() == 2)
-					return (Get(uri_pair, tmp[i]));
+        if (request.getNumMethod() == 2)
+					return (Get(uri_pair, locations[i]));
 				if (request.getNumMethod() == 1)
-					return (Post(uri_pair, tmp[i], request));
+					return (Post(uri_pair, locations[i], request));
 				if (request.getNumMethod() == 4)
-					return (Delete(uri_pair, tmp[i]));
+					return (Delete(uri_pair, locations[i]));
 			}
 			else
 			{
