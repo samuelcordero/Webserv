@@ -6,7 +6,7 @@
 /*   By: agserran <agserran@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/15 13:02:58 by sacorder          #+#    #+#             */
-/*   Updated: 2024/06/27 16:48:45 by agserran         ###   ########.fr       */
+/*   Updated: 2024/07/01 16:58:42 by agserran         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -201,6 +201,45 @@ std::pair<std::string, std::string>	splitUri(std::string uri) {
         return std::make_pair(uri.substr(0, pos + 1), uri.substr(pos + 1));
 }
 
+static Response Get(std::pair<std::string, std::string> uri_pair, Location& location)
+{
+	std::string file_path = location.getRoot() + "/" + uri_pair.second;
+	std::cerr << "opening file " << file_path << std::endl;
+	std::ifstream file(file_path.c_str());
+				
+    if (file.is_open()) {
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+    	std::string file_contents = buffer.str();
+        file.close();
+        return Response(200, "OK", file_contents);
+    } else {
+        return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.");
+    }
+}
+
+static Response	Delete(std::pair<std::string, std::string> uri_pair, Location &location)
+{
+	std::string file_path = location.getRoot() + "/" + uri_pair.second;
+	if (remove(file_path.c_str()) == 0)
+		return Response(204, "No content", "");
+	else
+		return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.");
+}
+
+static Response Post(std::pair<std::string, std::string> uri_pair, Location& location, const Request& request)
+{
+	std::string file_path = location.getRoot() + "/" + uri_pair.second;
+	std::ofstream	outfile;
+
+	outfile.open(file_path.c_str());
+	if (!outfile.is_open())
+		return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.");
+	outfile << request.getBody();
+	outfile.close();
+	return Response(200, "OK" ,request.getBody());
+}
+
 Response TCPListener::analizer(const Request& request)
 {
 	std::vector<Location> &tmp = this->server->getLocations();
@@ -215,20 +254,12 @@ Response TCPListener::analizer(const Request& request)
 			std::cerr << "requested method: " << request.getNumMethod() << std::endl;
 			if ((tmp[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
-                std::string file_path = tmp[i].getRoot() + "/" + uri_pair.second;
-				std::cerr << "opening file " << file_path << std::endl;
-
-                std::ifstream file(file_path.c_str());
-
-                if (file.is_open()) {
-                    std::stringstream buffer;
-                    buffer << file.rdbuf();
-                    std::string file_contents = buffer.str();
-                    file.close();
-                    return Response(200, "OK", file_contents);
-                } else {
-                    return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.");
-                }
+                if (request.getNumMethod() == 2)
+					return (Get(uri_pair, tmp[i]));
+				if (request.getNumMethod() == 1)
+					return (Post(uri_pair, tmp[i], request));
+				if (request.getNumMethod() == 4)
+					return (Delete(uri_pair, tmp[i]));
 			}
 			else
 			{
