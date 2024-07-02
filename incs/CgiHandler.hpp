@@ -8,10 +8,12 @@ class CGIHandler
 public:
     CGIHandler(const std::string &scriptPath);
     void handleRequest();
+    std::string getOutputData();
 
 private:
     std::string scriptPath;
     std::string postData;
+    std::string outputData;
 
     // Environment variables
     std::string requestMethod;

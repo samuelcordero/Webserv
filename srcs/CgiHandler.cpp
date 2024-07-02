@@ -127,11 +127,19 @@ void CGIHandler::waitForChildProcess(pid_t pid, int pipefd[])
         while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer) - 1)) > 0)
         {
             buffer[bytesRead] = '\0';
-            std::cout << buffer;
+            // comment the stdout to avoid debug printing
+            // std::cout << buffer;
+            // append the output to outputData member
+            outputData.append(buffer, bytesRead);
         }
     }
     else
     {
         std::cerr << "CGI script execution failed\n";
     }
+}
+
+std::string CGIHandler::getOutputData()
+{
+    return outputData;
 }
