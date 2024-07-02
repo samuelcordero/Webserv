@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   TCPListener.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: bazuara <bazuara@student.42madrid.com>     +#+  +:+       +#+        */
+/*   By: agserran <agserran@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/15 13:02:58 by sacorder          #+#    #+#             */
-/*   Updated: 2024/07/02 12:32:35 by bazuara          ###   ########.fr       */
+/*   Updated: 2024/07/01 16:58:42 by agserran         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -264,11 +264,11 @@ Response TCPListener::analizer(const Request &request)
 			if ((locations[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
 				if (request.getNumMethod() == 2)
-					return (Get(uri_pair, tmp[i]));
+					return (Get(uri_pair, locations[i]));
 				if (request.getNumMethod() == 1)
-					return (Post(uri_pair, tmp[i], request));
+					return (Post(uri_pair, locations[i], request));
 				if (request.getNumMethod() == 4)
-					return (Delete(uri_pair, tmp[i]));
+					return (Delete(uri_pair, locations[i]));
 			}
 			else
 			{
