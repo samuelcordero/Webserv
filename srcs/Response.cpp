@@ -29,7 +29,7 @@ Response::Response() {
     message += body;
 }
 
-Response::Response(int status_code, const std::string& status_message, const std::string& body) {
+Response::Response(int status_code, const std::string& status_message, const std::string& body, bool include_body) {
 	message += "HTTP/1.1 " + _int_to_string(status_code) + " " + status_message + "\r\n";
     message += "Date: " + _get_current_date() + "\r\n";
     message += "Server: CustomC++Server/1.0\r\n";
@@ -37,7 +37,8 @@ Response::Response(int status_code, const std::string& status_message, const std
     message += "Content-Length: " + _int_to_string(body.length()) + "\r\n";
     message += "Connection: keep-alive\r\n";
     message += "\r\n";
-    message += body;
+	if (include_body)
+    	message += body;
 }
 
 Response::Response(const Response &other) {
