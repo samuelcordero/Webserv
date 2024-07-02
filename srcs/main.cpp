@@ -1,5 +1,5 @@
 #include "config_parser.hpp"
-#include "CGIHandler.hpp"
+#include "CgiHandler.hpp"
 
 int main()
 {
