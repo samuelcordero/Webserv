@@ -16,5 +16,6 @@ RUN apt update && apt install -y \
 RUN pip3 install cpplint
 RUN pip3 install requests
 RUN pip3 install pytest
+RUN pip3 install art
 
 
