@@ -104,7 +104,7 @@ int	Request::getNumMethod() const
 {
 	if (this->method == "POST")
 		return (1);
-	if (this->method == "GET")
+	if (this->method == "GET" || this->method == "HEAD")
 		return (2);
 	if (this->method == "DELETE")
 		return (4);

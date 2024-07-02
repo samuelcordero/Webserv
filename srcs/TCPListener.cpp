@@ -213,9 +213,26 @@ static Response Get(std::pair<std::string, std::string> uri_pair, Location& loca
         buffer << file.rdbuf();
     	std::string file_contents = buffer.str();
         file.close();
-        return Response(200, "OK", file_contents);
+        return Response(200, "OK", file_contents, true);
     } else {
-        return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.");
+        return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.", true);
+    }
+}
+
+static Response Head(std::pair<std::string, std::string> uri_pair, Location& location)
+{
+	std::string file_path = location.getRoot() + "/" + uri_pair.second;
+	std::cerr << "opening file " << file_path << std::endl;
+	std::ifstream file(file_path.c_str());
+				
+    if (file.is_open()) {
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+    	std::string file_contents = buffer.str();
+        file.close();
+        return Response(200, "OK", file_contents, false);
+    } else {
+        return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.", true);
     }
 }
 
@@ -223,9 +240,9 @@ static Response	Delete(std::pair<std::string, std::string> uri_pair, Location &l
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
 	if (remove(file_path.c_str()) == 0)
-		return Response(204, "No content", "");
+		return Response(204, "No content", "", true);
 	else
-		return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.");
+		return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.", true);
 }
 
 static Response Post(std::pair<std::string, std::string> uri_pair, Location& location, const Request& request)
@@ -235,10 +252,10 @@ static Response Post(std::pair<std::string, std::string> uri_pair, Location& loc
 
 	outfile.open(file_path.c_str());
 	if (!outfile.is_open())
-		return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.");
+		return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.", true);
 	outfile << request.getBody();
 	outfile.close();
-	return Response(200, "OK" ,request.getBody());
+	return Response(200, "OK", request.getBody(), true);
 }
 
 Response TCPListener::analizer(const Request& request)
@@ -254,22 +271,24 @@ Response TCPListener::analizer(const Request& request)
 		{
 			if (uri_pair.second == "")
 				uri_pair.second = locations[i].getIndex();
-			std::cerr << "requested method: " << request.getNumMethod() << std::endl;
+			std::cerr << "requested method: " << request.getMethod() << std::endl;
 			if ((locations[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
-        if (request.getNumMethod() == 2)
-					return (Get(uri_pair, locations[i]));
 				if (request.getNumMethod() == 1)
 					return (Post(uri_pair, locations[i], request));
+        		if (request.getNumMethod() == 2 && request.getMethod() == "GET")
+					return (Get(uri_pair, locations[i]));
+				if (request.getNumMethod() == 2 && request.getMethod() == "HEAD")
+					return (Head(uri_pair, locations[i]));
 				if (request.getNumMethod() == 4)
 					return (Delete(uri_pair, locations[i]));
 			}
 			else
 			{
-				return (Response(405, "Method Not Allowed", "405 Error\nThe requested method isn't allowed"));
+				return (Response(405, "Method Not Allowed", "405 Error\nThe requested method isn't allowed", true));
 			}
 			break;
 		}
 	}
-	return (Response(404, "Not Found", "404 Error\nWe tried, but couldn't find :("));
+	return (Response(404, "Not Found", "404 Error\nWe tried, but couldn't find :(", true));
 }

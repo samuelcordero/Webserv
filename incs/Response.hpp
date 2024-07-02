@@ -12,7 +12,7 @@ class Response {
 		std::string _get_current_date();
 	public:
 		Response();
-		Response(int status_code, const std::string& status_message, const std::string& body);
+		Response(int status_code, const std::string& status_message, const std::string& body, bool include_body);
 		Response(const Response &other);
 		~Response();
 
