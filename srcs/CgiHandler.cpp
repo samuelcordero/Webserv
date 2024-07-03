@@ -120,7 +120,7 @@ void CGIHandler::waitForChildProcess(pid_t pid, int pipefd[])
     if (result == 0)
     {
         // Child process is still running
-        sleep(5); // Wait for 5 seconds
+        sleep(1); // Wait for 1 seconds
         result = waitpid(pid, &status, WNOHANG);
         if (result == 0)
         {
