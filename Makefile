@@ -42,7 +42,10 @@ fclean: clean
 	$(RM) $(NAME)
 # start the server and redirects all outputs to null
 start_server: $(NAME)
-	@./$(NAME) 2> /dev/null 1> /dev/null &
+	@./$(NAME) config/tester.conf 2> /dev/null 1> /dev/null &
+
+kill_server:
+	@ps aux | grep $(NAME) | grep -v grep | awk '{print $$2}' | xargs kill -9
 
 test: start_server
 	@pytest $(TEST_SCRIPT)
