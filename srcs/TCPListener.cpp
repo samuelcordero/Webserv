@@ -165,41 +165,31 @@ void TCPListener::connectionHandler(int pos)
 	}
 	if (bytesRead)
 		buffers[client_socket_fd].push_back(std::string(buffer, bytesRead));
-	if (bytesRead >= 0) { // process chunked request
-		std::string accumulated;
-		for (std::vector<std::string>::iterator it = buffers[client_socket_fd].begin(); it != buffers[client_socket_fd].end(); ++it)
-			accumulated += *it;
-		std::string::size_type pos_delimiter = accumulated.find("\r\n\r\n"); //search for the end of the first request
-		if (pos_delimiter != std::string::npos) { // if there is one request ready
-			std::string request = accumulated.substr(0, pos_delimiter + 4);
-			std::string remainder = accumulated.substr(pos_delimiter + 4);
+	if (bytesRead > 0) { // process chunked request
+		// std::cerr << "---- RECEIVED REQUEST ----\n"
+		//		  << request << "---- REQUEST END ----\n";
+		Request r = Request(buffers[client_socket_fd]);
+		std::cerr << "---- PARSED REQUEST ----\n"
+				<< r << std::endl
+				<< "---- PARSED REQUEST END ----\n";
+		
+		Response resp = analizer(r);
+		if (r.getContentLen() != r.getBody().length())
+			return ;
 
-			buffers[client_socket_fd].clear();
-			if (!remainder.empty())
-				buffers[client_socket_fd].push_back(remainder);
-			// std::cerr << "---- RECEIVED REQUEST ----\n"
-			//		  << request << "---- REQUEST END ----\n";
-			Request r = Request(request);
-			std::cerr << "---- PARSED REQUEST ----\n"
-					<< r << std::endl
-					<< "---- PARSED REQUEST END ----\n";
-			Response resp = analizer(r);
+		//std::cerr << "Response built succesfully\n";
+		//std::cerr << resp;
 
-			//std::cerr << "Response built succesfully\n";
-
-			//std::cerr << resp;
-
-			std::string message = resp.getMessage();
-			send(client_socket_fd, message.c_str(), message.length(), 0);
-			if (r.getHeaders().find("Connection") != r.getHeaders().end()
-				&& r.getHeaders()["Connection"] == "close") { //check close, keep-alive is default in http1.1 if not included
-				// if disconecting, delete from epoll ctr monitoring
-				std::cerr << "[ " << Response::get_current_date() << " ] : Closing connection with " << client_socket_fd << "; Connection header: " << r.getHeaders()["Connection"] << std::endl;
-				if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, (*events)[pos].data.fd, NULL) == -1) {
-					perror("epoll_ctl");
-				}
-				close(client_socket_fd);
+		std::string message = resp.getMessage();
+		send(client_socket_fd, message.c_str(), message.length(), 0);
+		if (r.getHeaders().find("Connection") != r.getHeaders().end()
+			&& r.getHeaders()["Connection"] == "close") { //check close, keep-alive is default in http1.1 if not included
+			// if disconecting, delete from epoll ctr monitoring
+			std::cerr << "[ " << Response::get_current_date() << " ] : Closing connection with " << client_socket_fd << "; Connection header: " << r.getHeaders()["Connection"] << std::endl;
+			if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, (*events)[pos].data.fd, NULL) == -1) {
+				perror("epoll_ctl");
 			}
+			close(client_socket_fd);
 		}
 	}
 }
