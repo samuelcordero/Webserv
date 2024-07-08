@@ -16,16 +16,17 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 
-TCPListener::TCPListener(int port, Server *server) : port(port) {
+TCPListener::TCPListener(int port, Server *server) : port(port)
+{
 	this->server = server;
 	epoll_fd = -1;
 	socket_fd = -1;
 	events = NULL;
 }
 
-TCPListener& TCPListener::operator=(const TCPListener& copy)
+TCPListener &TCPListener::operator=(const TCPListener &copy)
 {
-	//std::cerr << "called equal op tcp listener\n";
+	// std::cerr << "called equal op tcp listener\n";
 	this->port = copy.port;
 	this->server = copy.server;
 	epoll_fd = -1;
@@ -34,9 +35,9 @@ TCPListener& TCPListener::operator=(const TCPListener& copy)
 	return (*this);
 }
 
-TCPListener::TCPListener(const TCPListener& copy, Server *s) : server(copy.server)
+TCPListener::TCPListener(const TCPListener &copy, Server *s) : server(copy.server)
 {
-	//std::cerr << "called copy cons tcp listener\n";
+	// std::cerr << "called copy cons tcp listener\n";
 	*this = copy;
 	server = s;
 }
@@ -51,7 +52,8 @@ TCPListener::~TCPListener()
 		delete events;
 }
 
-void TCPListener::start() {
+void TCPListener::start()
+{
 	socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket_fd == -1)
 	{
@@ -170,16 +172,16 @@ void TCPListener::mock_handler(int client_socket_fd)
 		return;
 	}
 	if (bytesRead == 0)
-		return ; //wtf
+		return; // wtf
 	// Process the received data (parse the HTTP request and generate a response)
 	std::string request(buffer, bytesRead);
-	//std::cout << "---- RECEIVED REQUEST ----\n"
+	// std::cout << "---- RECEIVED REQUEST ----\n"
 	//		  << request << "---- REQUEST END ----\n";
 	Request r = Request(request);
 	std::cout << "---- PARSED REQUEST ----\n"
 			  << r << std::endl
 			  << "---- PARSED REQUEST END ----\n";
-	//logica
+	// logica
 	Response resp = analizer(r);
 
 	std::cout << "Response built succesfully\n";
@@ -191,74 +193,84 @@ void TCPListener::mock_handler(int client_socket_fd)
 	send(client_socket_fd, message.c_str(), message.length(), 0);
 }
 
-std::pair<std::string, std::string>	splitUri(std::string uri) {
+std::pair<std::string, std::string> splitUri(std::string uri)
+{
 	std::size_t pos = uri.find_last_of('/');
 
-    if (pos == std::string::npos)
-        return std::make_pair("", uri);
-    else if (pos == uri.length())
-        return std::make_pair(uri, "");
-    else
-        return std::make_pair(uri.substr(0, pos + 1), uri.substr(pos + 1));
+	if (pos == std::string::npos)
+		return std::make_pair("", uri);
+	else if (pos == uri.length())
+		return std::make_pair(uri, "");
+	else
+		return std::make_pair(uri.substr(0, pos + 1), uri.substr(pos + 1));
 }
 
-static Response Get(std::pair<std::string, std::string> uri_pair, Location& location)
+static Response Get(std::pair<std::string, std::string> uri_pair, Location &location)
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
 	std::cerr << "opening file " << file_path << std::endl;
 	std::ifstream file(file_path.c_str());
-				
-    if (file.is_open()) {
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-    	std::string file_contents = buffer.str();
-        file.close();
-        return Response(200, "OK", file_contents, true);
-    } else {
-        return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.", true);
-    }
+
+	if (file.is_open())
+	{
+		std::stringstream buffer;
+		buffer << file.rdbuf();
+		std::string file_contents = buffer.str();
+		file.close();
+		return Response(200, file_contents, true);
+	}
+	else
+	{
+		// TODO: change it to forbidden instead of internal server error
+		return Response(500, "500 Error\nCould not open the requested file.", true);
+	}
 }
 
-static Response Head(std::pair<std::string, std::string> uri_pair, Location& location)
+static Response Head(std::pair<std::string, std::string> uri_pair, Location &location)
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
 	std::cerr << "opening file " << file_path << std::endl;
 	std::ifstream file(file_path.c_str());
-				
-    if (file.is_open()) {
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-    	std::string file_contents = buffer.str();
-        file.close();
-        return Response(200, "OK", file_contents, false);
-    } else {
-        return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.", true);
-    }
+
+	if (file.is_open())
+	{
+		std::stringstream buffer;
+		buffer << file.rdbuf();
+		std::string file_contents = buffer.str();
+		file.close();
+		return Response(200, file_contents, false);
+	}
+	else
+	{
+		// TODO: change it to forbidden instead of internal server error
+		return Response(500, "500 Error\nCould not open the requested file.", true);
+	}
 }
 
-static Response	Delete(std::pair<std::string, std::string> uri_pair, Location &location)
+static Response Delete(std::pair<std::string, std::string> uri_pair, Location &location)
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
 	if (remove(file_path.c_str()) == 0)
-		return Response(204, "No content", "", true);
+		return Response(204, "", false);
 	else
-		return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.", true);
+		// TODO: change it to forbidden instead of internal server error
+		return Response(500, "500 Error\nCould not open the requested file.", true);
 }
 
-static Response Post(std::pair<std::string, std::string> uri_pair, Location& location, const Request& request)
+static Response Post(std::pair<std::string, std::string> uri_pair, Location &location, const Request &request)
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
-	std::ofstream	outfile;
+	std::ofstream outfile;
 
 	outfile.open(file_path.c_str());
 	if (!outfile.is_open())
-		return Response(500, "Internal Server Error", "500 Error\nCould not open the requested file.", true);
+		return Response(500, "500 Error\nCould not open the requested file.", true);
 	outfile << request.getBody();
 	outfile.close();
-	return Response(200, "OK", request.getBody(), true);
+	return Response(200, request.getBody(), true);
 }
 
-Response TCPListener::analizer(const Request& request)
+Response TCPListener::analizer(const Request &request)
 {
 	std::vector<Location> &locations = this->server->getLocations();
 
@@ -276,7 +288,7 @@ Response TCPListener::analizer(const Request& request)
 			{
 				if (request.getNumMethod() == 1)
 					return (Post(uri_pair, locations[i], request));
-        		if (request.getNumMethod() == 2 && request.getMethod() == "GET")
+				if (request.getNumMethod() == 2 && request.getMethod() == "GET")
 					return (Get(uri_pair, locations[i]));
 				if (request.getNumMethod() == 2 && request.getMethod() == "HEAD")
 					return (Head(uri_pair, locations[i]));
@@ -285,10 +297,10 @@ Response TCPListener::analizer(const Request& request)
 			}
 			else
 			{
-				return (Response(405, "Method Not Allowed", "405 Error\nThe requested method isn't allowed", true));
+				return (Response(405, "405 Error\nThe requested method isn't allowed", true));
 			}
 			break;
 		}
 	}
-	return (Response(404, "Not Found", "404 Error\nWe tried, but couldn't find :(", true));
+	return (Response(404, "404 Error\nWe tried, but couldn't find :(", true));
 }
