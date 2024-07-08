@@ -1,6 +1,6 @@
 #include "Response.hpp"
 
-std::string Response::_get_current_date()
+std::string Response::get_current_date()
 {
     std::time_t now = std::time(NULL);
     std::tm *tm = std::gmtime(&now);
@@ -23,7 +23,7 @@ Response::Response()
     std::string body;
     body = "Hello world! This is test message!";
     message += "HTTP/1.1 " + _int_to_string(200) + " " + "OK" + "\r\n";
-    message += "Date: " + _get_current_date() + "\r\n";
+    message += "Date: " + get_current_date() + "\r\n";
     message += "Server: CustomC++Server/1.0\r\n";
     message += "Content-Type: text/html; charset=UTF-8\r\n";
     message += "Content-Length: " + _int_to_string(body.length()) + "\r\n";
@@ -79,7 +79,7 @@ Response::Response(int status_code, const std::string &body, bool include_body)
         break;
     }
     message += "HTTP/1.1 " + _int_to_string(status_code) + " " + status_message + "\r\n";
-    message += "Date: " + _get_current_date() + "\r\n";
+    message += "Date: " + get_current_date() + "\r\n";
     message += "Server: CustomC++Server/1.0\r\n";
     message += "Content-Type: text/html; charset=UTF-8\r\n";
     message += "Content-Length: " + _int_to_string(body.length()) + "\r\n";

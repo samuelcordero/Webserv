@@ -13,7 +13,6 @@ private:
 	std::string status_message;
 	std::string body;
 
-	std::string _get_current_date();
 
 public:
 	Response();
@@ -31,6 +30,8 @@ public:
 	void setStatusMessage(const std::string &status_message);
 	void setStatusCode(const int &status_code);
 
+	static std::string get_current_date();
+	
 	Response &operator=(const Response &other);
 };
 

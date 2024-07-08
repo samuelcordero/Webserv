@@ -143,54 +143,65 @@ void TCPListener::run()
 				exit(EXIT_FAILURE);
 			}
 
-			std::cout << "Connection accepted from " << inet_ntoa(client_addr.sin_addr) << ":" << ntohs(client_addr.sin_port) << std::endl;
+			std::cerr << "[ " << Response::get_current_date() << " ] : Connection accepted from " << inet_ntoa(client_addr.sin_addr) << ":" << ntohs(client_addr.sin_port) << std::endl;
 		}
-		else
-		{
+		else {
 			// handle client response
-			std::cout << "Handling response..." << std::endl;
-			mock_handler((*events)[i].data.fd);
-
-			// delete from epoll ctr monitoring
-			if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, (*events)[i].data.fd, NULL) == -1)
-			{
-				perror("epoll_ctl");
-			}
-			close((*events)[i].data.fd);
+			connectionHandler(i);
 		}
 	}
 }
 
-void TCPListener::mock_handler(int client_socket_fd)
+void TCPListener::connectionHandler(int pos)
 {
-	char buffer[1024];
-
-	int bytesRead = recv(client_socket_fd, buffer, sizeof(buffer), 0);
+	int client_socket_fd = (*events)[pos].data.fd;
+	char buffer[3072];
+	int bytesRead;
+	bytesRead = recv(client_socket_fd, buffer, sizeof(buffer), 0);
 	if (bytesRead == -1)
 	{
 		perror("recv");
 		return;
 	}
-	if (bytesRead == 0)
-		return; // wtf
-	// Process the received data (parse the HTTP request and generate a response)
-	std::string request(buffer, bytesRead);
-	// std::cout << "---- RECEIVED REQUEST ----\n"
-	//		  << request << "---- REQUEST END ----\n";
-	Request r = Request(request);
-	std::cout << "---- PARSED REQUEST ----\n"
-			  << r << std::endl
-			  << "---- PARSED REQUEST END ----\n";
-	// logica
-	Response resp = analizer(r);
+	if (bytesRead)
+		buffers[client_socket_fd].push_back(std::string(buffer, bytesRead));
+	if (bytesRead >= 0) { // process chunked request
+		std::string accumulated;
+		for (std::vector<std::string>::iterator it = buffers[client_socket_fd].begin(); it != buffers[client_socket_fd].end(); ++it)
+			accumulated += *it;
+		std::string::size_type pos_delimiter = accumulated.find("\r\n\r\n"); //search for the end of the first request
+		if (pos_delimiter != std::string::npos) { // if there is one request ready
+			std::string request = accumulated.substr(0, pos_delimiter + 4);
+			std::string remainder = accumulated.substr(pos_delimiter + 4);
 
-	std::cout << "Response built succesfully\n";
+			buffers[client_socket_fd].clear();
+			if (!remainder.empty())
+				buffers[client_socket_fd].push_back(remainder);
+			// std::cerr << "---- RECEIVED REQUEST ----\n"
+			//		  << request << "---- REQUEST END ----\n";
+			Request r = Request(request);
+			std::cerr << "---- PARSED REQUEST ----\n"
+					<< r << std::endl
+					<< "---- PARSED REQUEST END ----\n";
+			Response resp = analizer(r);
 
-	std::cout << resp;
+			//std::cerr << "Response built succesfully\n";
 
-	// Send a response back to the client (THIS IS OBVIOUSLY A MOCK!)
-	std::string message = resp.getMessage();
-	send(client_socket_fd, message.c_str(), message.length(), 0);
+			//std::cerr << resp;
+
+			std::string message = resp.getMessage();
+			send(client_socket_fd, message.c_str(), message.length(), 0);
+			if (r.getHeaders().find("Connection") != r.getHeaders().end()
+				&& r.getHeaders()["Connection"] == "close") { //check close, keep-alive is default in http1.1 if not included
+				// if disconecting, delete from epoll ctr monitoring
+				std::cerr << "[ " << Response::get_current_date() << " ] : Closing connection with " << client_socket_fd << "; Connection header: " << r.getHeaders()["Connection"] << std::endl;
+				if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, (*events)[pos].data.fd, NULL) == -1) {
+					perror("epoll_ctl");
+				}
+				close(client_socket_fd);
+			}
+		}
+	}
 }
 
 std::pair<std::string, std::string> splitUri(std::string uri)
@@ -208,7 +219,7 @@ std::pair<std::string, std::string> splitUri(std::string uri)
 static Response Get(std::pair<std::string, std::string> uri_pair, Location &location)
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
-	std::cerr << "opening file " << file_path << std::endl;
+	//std::cerr << "opening file " << file_path << std::endl;
 	std::ifstream file(file_path.c_str());
 
 	if (file.is_open())
@@ -229,7 +240,7 @@ static Response Get(std::pair<std::string, std::string> uri_pair, Location &loca
 static Response Head(std::pair<std::string, std::string> uri_pair, Location &location)
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
-	std::cerr << "opening file " << file_path << std::endl;
+	//std::cerr << "opening file " << file_path << std::endl;
 	std::ifstream file(file_path.c_str());
 
 	if (file.is_open())
@@ -276,14 +287,14 @@ Response TCPListener::analizer(const Request &request)
 
 	std::pair<std::string, std::string> uri_pair = splitUri(request.getUri());
 
-	std::cerr << "Building response for resource " << uri_pair.second << " at location " << uri_pair.first << std::endl;
+	//std::cerr << "Building response for resource " << uri_pair.second << " at location " << uri_pair.first << std::endl;
 	for (size_t i = 0; i < locations.size(); i++)
 	{
 		if (locations[i].getUri() == uri_pair.first)
 		{
 			if (uri_pair.second == "")
 				uri_pair.second = locations[i].getIndex();
-			std::cerr << "requested method: " << request.getMethod() << std::endl;
+			//std::cerr << "requested method: " << request.getMethod() << std::endl;
 			if ((locations[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
 				if (request.getNumMethod() == 1)

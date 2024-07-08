@@ -5,7 +5,7 @@ int main()
 {
 	Parser parse("config/default.conf");
 
-	// test cgi
+	/* // test cgi
 	std::cout << "CGI TEST" << std::endl;
 	CGIHandler cgiHandler1("CGI/test.py");
 	cgiHandler1.handleRequest();
@@ -15,7 +15,7 @@ int main()
 	cgiHandler2.handleRequest();
 	std::cout << "CGI TEST: Begining of output data 2 -> " << cgiHandler2.getOutputData() << "<- End of output data 2." << std::endl;
 	std::cout << "CGI TEST END" << std::endl;
-	// end of cgi test
+	// end of cgi test */
 
 	parse.run();
 }

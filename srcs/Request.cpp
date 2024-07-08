@@ -41,7 +41,16 @@ Request::Request(std::string request)
     }
 
     // Parse body
-    body = request.substr(pos);
+	char	*end;
+	if (headers.find("Content-Length") != headers.end()) // create body with Content-Length if available
+    	body = request.substr(pos, std::strtol(headers["Content-Length"].c_str(), &end, 10));
+	else
+		body = request.substr(pos);
+
+	if (*end != '\0') {
+		std::cerr << "File may be too big!\n";
+		body = request.substr(pos);
+	}
 }
 
 Request::Request(const Request &other)

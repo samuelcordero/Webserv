@@ -47,8 +47,10 @@ class TCPListener {
 		epoll_event					event;
 		std::vector<epoll_event>	*events;
 		Server						*server;
+		std::vector<std::string>	buffers[4096];			
 
-		void	mock_handler(int client_socket_fd);
+		Response	analizer(const Request& request);
+		void	connectionHandler(int pos);
 	public:
 		TCPListener(int port, Server *server);
 		~TCPListener();
@@ -56,7 +58,7 @@ class TCPListener {
 		TCPListener& operator=(const TCPListener& copy);
 		void	start();
 		void	run();
-		Response	analizer(const Request& request);
+		
 };
 
 #endif
