@@ -115,7 +115,21 @@ void CGIHandler::setCGIEnvironment()
 void CGIHandler::waitForChildProcess(pid_t pid, int pipefd[])
 {
     int status;
-    waitpid(pid, &status, 0);
+    pid_t result = waitpid(pid, &status, WNOHANG);
+
+    if (result == 0)
+    {
+        // Child process is still running
+        sleep(1); // Wait for 1 seconds
+        result = waitpid(pid, &status, WNOHANG);
+        if (result == 0)
+        {
+            // Child process is still running after timeout
+            kill(pid, SIGKILL); // Kill the child process
+            outputData = "Error: Timeout";
+            return;
+        }
+    }
 
     if (WIFEXITED(status))
     {
