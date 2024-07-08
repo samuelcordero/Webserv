@@ -38,3 +38,22 @@ def test_unknown_request_method():
 def test_wrong_url():
     response = requests.get(BASE_URL + "/non_existent_resource")
     assert response.status_code == 404
+
+# Check upload and download of a file
+def test_file_upload_and_download():
+    f = 'Makefile'
+    files = {'file': (f, open(f, 'rb'))}
+    response = requests.post(BASE_URL + "/upload", files=files)
+    assert response.status_code == 200
+
+    # Assuming the server returns the file content at /upload/Makefile
+    response = requests.get(BASE_URL + "/upload/" + f)
+    assert response.status_code == 200
+    with open(f, 'rb') as f:
+        assert response.content == f.read()
+
+# Check for HEAD method
+def test_head_request():
+    response = requests.head(BASE_URL + "/some_resource")
+    assert response.status_code == 200
+    assert response.content == b''  # No content in the response
