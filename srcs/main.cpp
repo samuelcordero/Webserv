@@ -1,10 +1,18 @@
 #include "config_parser.hpp"
 #include "CgiHandler.hpp"
 
-int main()
+int main(int argc, char **argv)
 {
-	Parser parse("config/default.conf");
-
+	std::string config_file_path;
+	if (argc > 2) {
+		std::cerr << "Arguments should be one config file\n";
+		return (1);
+	}
+	if (argc == 1)
+		config_file_path = "config/default.conf";
+	else
+		config_file_path = argv[1];
+	Parser parse(config_file_path);
 	/* // test cgi
 	std::cout << "CGI TEST" << std::endl;
 	CGIHandler cgiHandler1("CGI/test.py");

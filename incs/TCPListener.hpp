@@ -37,6 +37,7 @@
 class Request;
 class Server;
 class Response;
+class Location;
 
 class TCPListener {
 	private:
@@ -47,10 +48,20 @@ class TCPListener {
 		epoll_event					event;
 		std::vector<epoll_event>	*events;
 		Server						*server;
-		std::vector<std::string>	buffers[4096];			
+		std::vector<std::string>	buffers[4096];
+		Response					*responses[4096];
+		std::pair<Request *, bool>	requests[4096];
 
 		Response	analizer(const Request& request);
-		void	connectionHandler(int pos);
+		void		readData(int pos);
+		void		sendData(int pos);
+		void		createResponse(size_t i);
+		Response 	Get(std::pair<std::string, std::string> uri_pair, Location &location);
+		Response 	Head(std::pair<std::string, std::string> uri_pair, Location &location);
+		Response 	Delete(std::pair<std::string, std::string> uri_pair, Location &location);
+		Response 	Post(std::pair<std::string, std::string> uri_pair, Location &location, const Request &request);
+		std::pair<std::string,
+		std::string> splitUri(std::string uri);
 	public:
 		TCPListener(int port, Server *server);
 		~TCPListener();
@@ -58,7 +69,6 @@ class TCPListener {
 		TCPListener& operator=(const TCPListener& copy);
 		void	start();
 		void	run();
-		
 };
 
 #endif

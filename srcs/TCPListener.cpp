@@ -54,6 +54,11 @@ TCPListener::~TCPListener()
 
 void TCPListener::start()
 {
+	memset(responses, 0, sizeof(responses));
+	for (size_t i = 0; i < 4096; ++i) {
+		requests[i].first = NULL;
+		requests[i].second = false;
+	}
 	socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket_fd == -1)
 	{
@@ -68,7 +73,7 @@ void TCPListener::start()
 		exit(EXIT_FAILURE);
 	}
 
-	memset(&server_addr, 0, sizeof(server_addr)); // forbidden function
+	memset(&server_addr, 0, sizeof(server_addr));
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(port);
 	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -134,7 +139,7 @@ void TCPListener::run()
 
 			// Add to epoll ctl
 			epoll_event client_event;
-			client_event.events = EPOLLIN | EPOLLET; // Use edge-triggered mode
+			client_event.events = EPOLLIN | EPOLLOUT;
 			client_event.data.fd = client_socket_fd;
 			if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_socket_fd, &client_event) == -1)
 			{
@@ -145,130 +150,71 @@ void TCPListener::run()
 
 			std::cerr << "[ " << Response::get_current_date() << " ] : Connection accepted from " << inet_ntoa(client_addr.sin_addr) << ":" << ntohs(client_addr.sin_port) << std::endl;
 		}
-		else {
-			// handle client response
-			connectionHandler(i);
+		else if (responses[(*events)[i].data.fd] && (*events)[i].events & EPOLLOUT) { //send client response if ready
+			sendData(i);
+		} else if ((*events)[i].events & EPOLLIN) { // read client data
+			readData(i);
 		}
 	}
 }
 
-void TCPListener::connectionHandler(int pos)
+void TCPListener::createResponse(size_t i) {
+	if (requests[i].second == true) {
+		responses[i] = new Response(analizer(*requests[i].first));
+		requests[i].second = false;
+	}
+}
+
+void TCPListener::sendData(int pos) {
+	int client_socket_fd = (*events)[pos].data.fd;
+	//std::cerr << "Response built succesfully\n";
+	//std::cerr << *responses[client_socket_fd];
+
+	std::string message = responses[client_socket_fd]->getMessage();
+	send(client_socket_fd, message.c_str(), message.length(), 0);
+	delete responses[client_socket_fd];
+	responses[client_socket_fd] = NULL;
+	if (requests[client_socket_fd].first->getHeaders().find("Connection") != requests[client_socket_fd].first->getHeaders().end()
+		&& requests[client_socket_fd].first->getHeaders()["Connection"] == "close") { //check close, keep-alive is default in http1.1 if not included
+		// if disconecting, delete from epoll ctr monitoring
+		std::cerr << "[ " << Response::get_current_date() << " ] : Closing connection with " << client_socket_fd << std::endl;
+		if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, (*events)[pos].data.fd, NULL) == -1) {
+			perror("epoll_ctl");
+		}
+		close(client_socket_fd);
+	}
+	delete requests[client_socket_fd].first;
+	requests[client_socket_fd].first = NULL;
+}
+
+void TCPListener::readData(int pos)
 {
 	int client_socket_fd = (*events)[pos].data.fd;
-	char buffer[3072];
+	char buffer[4096];
 	int bytesRead;
 	bytesRead = recv(client_socket_fd, buffer, sizeof(buffer), 0);
+	//static int ctr;
+	//std::cerr << "read (" << buffer << ")\n";
 	if (bytesRead == -1)
 	{
 		perror("recv");
-		return;
+		return ;
 	}
-	if (bytesRead)
+	if (bytesRead >= 0)
 		buffers[client_socket_fd].push_back(std::string(buffer, bytesRead));
-	if (bytesRead > 0) { // process chunked request
-		// std::cerr << "---- RECEIVED REQUEST ----\n"
-		//		  << request << "---- REQUEST END ----\n";
+	if (bytesRead > 0) { 
+		//std::cerr << "Trying to create request from " << buffers[client_socket_fd].size() << " chunks\n";
 		Request r = Request(buffers[client_socket_fd]);
-		std::cerr << "---- PARSED REQUEST ----\n"
-				<< r << std::endl
-				<< "---- PARSED REQUEST END ----\n";
-		
-		Response resp = analizer(r);
-		if (r.getContentLen() != r.getBody().length())
+		if (r.getContentLen() != r.getBody().length()) // if body not complete, skip
 			return ;
-
-		//std::cerr << "Response built succesfully\n";
-		//std::cerr << resp;
-
-		std::string message = resp.getMessage();
-		send(client_socket_fd, message.c_str(), message.length(), 0);
-		if (r.getHeaders().find("Connection") != r.getHeaders().end()
-			&& r.getHeaders()["Connection"] == "close") { //check close, keep-alive is default in http1.1 if not included
-			// if disconecting, delete from epoll ctr monitoring
-			std::cerr << "[ " << Response::get_current_date() << " ] : Closing connection with " << client_socket_fd << "; Connection header: " << r.getHeaders()["Connection"] << std::endl;
-			if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, (*events)[pos].data.fd, NULL) == -1) {
-				perror("epoll_ctl");
-			}
-			close(client_socket_fd);
-		}
+		//std::cerr << "---- PARSED REQUEST ----\n"
+		//		<< r << std::endl
+		//		<< "---- PARSED REQUEST END ----\n";
+		
+		requests[client_socket_fd].first = new Request(r);
+		requests[client_socket_fd].second = true;
+		createResponse(client_socket_fd);
 	}
-}
-
-std::pair<std::string, std::string> splitUri(std::string uri)
-{
-	std::size_t pos = uri.find_last_of('/');
-
-	if (pos == std::string::npos)
-		return std::make_pair("", uri);
-	else if (pos == uri.length())
-		return std::make_pair(uri, "");
-	else
-		return std::make_pair(uri.substr(0, pos + 1), uri.substr(pos + 1));
-}
-
-static Response Get(std::pair<std::string, std::string> uri_pair, Location &location)
-{
-	std::string file_path = location.getRoot() + "/" + uri_pair.second;
-	//std::cerr << "opening file " << file_path << std::endl;
-	std::ifstream file(file_path.c_str());
-
-	if (file.is_open())
-	{
-		std::stringstream buffer;
-		buffer << file.rdbuf();
-		std::string file_contents = buffer.str();
-		file.close();
-		return Response(200, file_contents, true);
-	}
-	else
-	{
-		// TODO: change it to forbidden instead of internal server error
-		return Response(500, "500 Error\nCould not open the requested file.", true);
-	}
-}
-
-static Response Head(std::pair<std::string, std::string> uri_pair, Location &location)
-{
-	std::string file_path = location.getRoot() + "/" + uri_pair.second;
-	//std::cerr << "opening file " << file_path << std::endl;
-	std::ifstream file(file_path.c_str());
-
-	if (file.is_open())
-	{
-		std::stringstream buffer;
-		buffer << file.rdbuf();
-		std::string file_contents = buffer.str();
-		file.close();
-		return Response(200, file_contents, false);
-	}
-	else
-	{
-		// TODO: change it to forbidden instead of internal server error
-		return Response(500, "500 Error\nCould not open the requested file.", true);
-	}
-}
-
-static Response Delete(std::pair<std::string, std::string> uri_pair, Location &location)
-{
-	std::string file_path = location.getRoot() + "/" + uri_pair.second;
-	if (remove(file_path.c_str()) == 0)
-		return Response(204, "", false);
-	else
-		// TODO: change it to forbidden instead of internal server error
-		return Response(500, "500 Error\nCould not open the requested file.", true);
-}
-
-static Response Post(std::pair<std::string, std::string> uri_pair, Location &location, const Request &request)
-{
-	std::string file_path = location.getRoot() + "/" + uri_pair.second;
-	std::ofstream outfile;
-
-	outfile.open(file_path.c_str());
-	if (!outfile.is_open())
-		return Response(500, "500 Error\nCould not open the requested file.", true);
-	outfile << request.getBody();
-	outfile.close();
-	return Response(200, request.getBody(), true);
 }
 
 Response TCPListener::analizer(const Request &request)
@@ -304,4 +250,81 @@ Response TCPListener::analizer(const Request &request)
 		}
 	}
 	return (Response(404, "404 Error\nWe tried, but couldn't find :(", true));
+}
+
+Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location &location)
+{
+	std::string file_path = location.getRoot() + "/" + uri_pair.second;
+	//std::cerr << "opening file " << file_path << std::endl;
+	std::ifstream file(file_path.c_str());
+
+	if (file.is_open())
+	{
+		std::stringstream buffer;
+		buffer << file.rdbuf();
+		std::string file_contents = buffer.str();
+		file.close();
+		return Response(200, file_contents, true);
+	}
+	else
+	{
+		// TODO: change it to forbidden instead of internal server error
+		return Response(500, "500 Error\nCould not open the requested file.", true);
+	}
+}
+
+Response TCPListener::Head(std::pair<std::string, std::string> uri_pair, Location &location)
+{
+	std::string file_path = location.getRoot() + "/" + uri_pair.second;
+	//std::cerr << "opening file " << file_path << std::endl;
+	std::ifstream file(file_path.c_str());
+
+	if (file.is_open())
+	{
+		std::stringstream buffer;
+		buffer << file.rdbuf();
+		std::string file_contents = buffer.str();
+		file.close();
+		return Response(200, file_contents, false);
+	}
+	else
+	{
+		// TODO: change it to forbidden instead of internal server error
+		return Response(500, "500 Error\nCould not open the requested file.", true);
+	}
+}
+
+Response TCPListener::Delete(std::pair<std::string, std::string> uri_pair, Location &location)
+{
+	std::string file_path = location.getRoot() + "/" + uri_pair.second;
+	if (remove(file_path.c_str()) == 0)
+		return Response(204, "", false);
+	else
+		// TODO: change it to forbidden instead of internal server error
+		return Response(500, "500 Error\nCould not open the requested file.", true);
+}
+
+Response TCPListener::Post(std::pair<std::string, std::string> uri_pair, Location &location, const Request &request)
+{
+	std::string file_path = location.getRoot() + "/" + uri_pair.second;
+	std::ofstream outfile;
+	std::cerr << "opening file " << file_path << std::endl;
+	outfile.open(file_path.c_str());
+	if (!outfile.is_open())
+		return Response(500, "500 Error\nCould not open the requested file.", true);
+	outfile << request.getBody();
+	outfile.close();
+	return Response(200, request.getBody(), true);
+}
+
+std::pair<std::string, std::string> TCPListener::splitUri(std::string uri)
+{
+	std::size_t pos = uri.find_last_of('/');
+
+	if (pos == std::string::npos)
+		return std::make_pair("", uri);
+	else if (pos == uri.length())
+		return std::make_pair(uri, "");
+	else
+		return std::make_pair(uri.substr(0, pos + 1), uri.substr(pos + 1));
 }

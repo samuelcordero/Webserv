@@ -134,6 +134,7 @@ Request::Request(const Request &other)
     uri = other.uri;
     headers = other.headers;
     body = other.body;
+	content_len = other.content_len;
 }
 
 Request &Request::operator=(const Request &other)
@@ -142,6 +143,7 @@ Request &Request::operator=(const Request &other)
     uri = other.uri;
     headers = other.headers;
     body = other.body;
+	content_len = other.content_len;
     return *this;
 }
 
