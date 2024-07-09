@@ -58,6 +58,7 @@ void TCPListener::start()
 	for (size_t i = 0; i < 4096; ++i) {
 		requests[i].first = NULL;
 		requests[i].second = false;
+		last_conn[i] = __LONG_LONG_MAX__;
 	}
 	socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket_fd == -1)
@@ -136,6 +137,7 @@ void TCPListener::run()
 				perror("Accept failed");
 				continue;
 			}
+			last_conn[client_socket_fd] = __LONG_LONG_MAX__;
 
 			// Add to epoll ctl
 			epoll_event client_event;
@@ -165,44 +167,53 @@ void TCPListener::createResponse(size_t i) {
 	}
 }
 
-void TCPListener::sendData(int pos) {
+void TCPListener::sendData(int pos) { // sends data from responses[client_socket_fd] to the client in (*events)[pos]
 	int client_socket_fd = (*events)[pos].data.fd;
 	//std::cerr << "Response built succesfully\n";
 	//std::cerr << *responses[client_socket_fd];
+	int bytes;
 
 	std::string message = responses[client_socket_fd]->getMessage();
-	send(client_socket_fd, message.c_str(), message.length(), 0);
+	bytes = send(client_socket_fd, message.c_str(), message.length(), 0);
 	delete responses[client_socket_fd];
 	responses[client_socket_fd] = NULL;
-	if (requests[client_socket_fd].first->getHeaders().find("Connection") != requests[client_socket_fd].first->getHeaders().end()
-		&& requests[client_socket_fd].first->getHeaders()["Connection"] == "close") { //check close, keep-alive is default in http1.1 if not included
-		// if disconecting, delete from epoll ctr monitoring
-		std::cerr << "[ " << Response::get_current_date() << " ] : Closing connection with " << client_socket_fd << std::endl;
-		if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, (*events)[pos].data.fd, NULL) == -1) {
-			perror("epoll_ctl");
-		}
-		close(client_socket_fd);
-	}
+	if (bytes == -1 || //if send fails, or request sends Connection close
+		(requests[client_socket_fd].first->getHeaders().find("Connection") != requests[client_socket_fd].first->getHeaders().end()
+		&& requests[client_socket_fd].first->getHeaders()["Connection"] == "close")) {
+		// remove from epoll and close connection
+		disconnectClient(pos);
+	} else
+		last_conn[client_socket_fd] = getCurrentEpochMillis();
 	delete requests[client_socket_fd].first;
 	requests[client_socket_fd].first = NULL;
 }
 
-void TCPListener::readData(int pos)
+// reads data from the client in (*events)[pos] and stores it in buffers[client_socket_fd]
+//tries to create a full request after reading, and stores the full request if it is succesfully created
+void TCPListener::readData(int pos) 
 {
 	int client_socket_fd = (*events)[pos].data.fd;
-	char buffer[4096];
+	char buffer[16384];
 	int bytesRead;
 	bytesRead = recv(client_socket_fd, buffer, sizeof(buffer), 0);
 	//static int ctr;
 	//std::cerr << "read (" << buffer << ")\n";
+	//std::cerr << "Read " << bytesRead << " bytes\n";
 	if (bytesRead == -1)
 	{
 		perror("recv");
+		disconnectClient(pos);
 		return ;
 	}
-	if (bytesRead >= 0)
+	if (bytesRead == 0) {
+		if (isTimeout(last_conn[client_socket_fd], getCurrentEpochMillis(), CONN_TIMEOUT)) {
+			std::cerr << "Timeout met: ";
+			disconnectClient(pos);
+		}
+	} else
+		last_conn[client_socket_fd] = getCurrentEpochMillis();
+	if (bytesRead > 0) {
 		buffers[client_socket_fd].push_back(std::string(buffer, bytesRead));
-	if (bytesRead > 0) { 
 		//std::cerr << "Trying to create request from " << buffers[client_socket_fd].size() << " chunks\n";
 		Request r = Request(buffers[client_socket_fd]);
 		if (r.getContentLen() != r.getBody().length()) // if body not complete, skip
@@ -215,6 +226,20 @@ void TCPListener::readData(int pos)
 		requests[client_socket_fd].second = true;
 		createResponse(client_socket_fd);
 	}
+}
+
+//disconnects a client
+void TCPListener::disconnectClient(int pos) {
+	int client_socket_fd = (*events)[pos].data.fd;
+
+	std::cerr << "[ " << Response::get_current_date() << " ] : Closing connection with " << client_socket_fd << std::endl;
+	// remove from epoll and close connection
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, (*events)[pos].data.fd, NULL) == -1) {
+		perror("epoll_ctl");
+	}
+	close(client_socket_fd);
+	buffers[client_socket_fd].clear();
+	last_conn[client_socket_fd] = __LONG_LONG_MAX__;
 }
 
 Response TCPListener::analizer(const Request &request)
@@ -327,4 +352,18 @@ std::pair<std::string, std::string> TCPListener::splitUri(std::string uri)
 		return std::make_pair(uri, "");
 	else
 		return std::make_pair(uri.substr(0, pos + 1), uri.substr(pos + 1));
+}
+
+// Get duration since epoch in milliseconds
+long long TCPListener::getCurrentEpochMillis() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return static_cast<long long>(tv.tv_sec) * 1000 + tv.tv_usec / 1000;
+}
+
+// Returns true once the threshold is greater or equal
+bool TCPListener::isTimeout(long long startMillis, long long endMillis, int thresholdSeconds) {
+    long long diffMillis = endMillis - startMillis;
+    long long diffSeconds = diffMillis / 1000;
+    return diffSeconds >= thresholdSeconds;
 }

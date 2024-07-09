@@ -20,6 +20,7 @@
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <sys/epoll.h>
+# include <sys/time.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
 # include <unistd.h>
@@ -31,8 +32,11 @@
 # include <cstring>
 # include <utility>
 # include <fstream>
+# include <ctime>
 
 # define MAX_EVENTS 128
+
+# define CONN_TIMEOUT 30
 
 class Request;
 class Server;
@@ -51,6 +55,7 @@ class TCPListener {
 		std::vector<std::string>	buffers[4096];
 		Response					*responses[4096];
 		std::pair<Request *, bool>	requests[4096];
+		long long					last_conn[4096];
 
 		Response	analizer(const Request& request);
 		void		readData(int pos);
@@ -62,6 +67,9 @@ class TCPListener {
 		Response 	Post(std::pair<std::string, std::string> uri_pair, Location &location, const Request &request);
 		std::pair<std::string,
 		std::string> splitUri(std::string uri);
+		long long	getCurrentEpochMillis();
+		bool 		isTimeout(long long startMillis, long long endMillis, int thresholdSeconds);
+		void		disconnectClient(int pos);
 	public:
 		TCPListener(int port, Server *server);
 		~TCPListener();
