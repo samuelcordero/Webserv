@@ -24,8 +24,7 @@ class Request
         std::string body;
 		size_t		content_len;
     public:
-        Request(std::string);
-		Request(std::vector<std::string> &request);
+        Request(std::string &);
         Request(const Request&);
         Request& operator=(const Request&);
         ~Request();

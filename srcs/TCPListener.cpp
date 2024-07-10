@@ -54,12 +54,6 @@ TCPListener::~TCPListener()
 
 void TCPListener::start()
 {
-	memset(responses, 0, sizeof(responses));
-	for (size_t i = 0; i < 4096; ++i) {
-		requests[i].first = NULL;
-		requests[i].second = false;
-		last_conn[i] = __LONG_LONG_MAX__;
-	}
 	socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket_fd == -1)
 	{
@@ -137,7 +131,7 @@ void TCPListener::run()
 				perror("Accept failed");
 				continue;
 			}
-			last_conn[client_socket_fd] = __LONG_LONG_MAX__;
+			clients[client_socket_fd].setLastConn(__LONG_LONG_MAX__);
 
 			// Add to epoll ctl
 			epoll_event client_event;
@@ -152,7 +146,7 @@ void TCPListener::run()
 
 			std::cerr << "[ " << Response::get_current_date() << " ] : Connection accepted from " << inet_ntoa(client_addr.sin_addr) << ":" << ntohs(client_addr.sin_port) << std::endl;
 		}
-		else if (responses[(*events)[i].data.fd] && (*events)[i].events & EPOLLOUT) { //send client response if ready
+		else if (clients[(*events)[i].data.fd].responseReady() && (*events)[i].events & EPOLLOUT) { //send client response if ready
 			sendData(i);
 		} else if ((*events)[i].events & EPOLLIN) { // read client data
 			readData(i);
@@ -161,31 +155,28 @@ void TCPListener::run()
 }
 
 void TCPListener::createResponse(size_t i) {
-	if (requests[i].second == true) {
-		responses[i] = new Response(analizer(*requests[i].first));
-		requests[i].second = false;
+	if (clients[i].requestReady())
+	{
+		clients[i].setResponse(analizer(clients[i].getRequest()));
 	}
 }
 
 void TCPListener::sendData(int pos) { // sends data from responses[client_socket_fd] to the client in (*events)[pos]
 	int client_socket_fd = (*events)[pos].data.fd;
-	//std::cerr << "Response built succesfully\n";
-	//std::cerr << *responses[client_socket_fd];
 	int bytes;
 
-	std::string message = responses[client_socket_fd]->getMessage();
+	std::string message = clients[client_socket_fd].getResponseMessage();
 	bytes = send(client_socket_fd, message.c_str(), message.length(), 0);
-	delete responses[client_socket_fd];
-	responses[client_socket_fd] = NULL;
+	clients[client_socket_fd].clearResponse();
+
+	const Request &r = clients[client_socket_fd].getRequest();
 	if (bytes == -1 || //if send fails, or request sends Connection close
-		(requests[client_socket_fd].first->getHeaders().find("Connection") != requests[client_socket_fd].first->getHeaders().end()
-		&& requests[client_socket_fd].first->getHeaders()["Connection"] == "close")) {
-		// remove from epoll and close connection
-		disconnectClient(pos);
+		(r.getHeaders().find("Connection") != r.getHeaders().end()
+		&& r.getHeaders()["Connection"] == "close")) {
+		disconnectClient(pos); //disconnect
 	} else
-		last_conn[client_socket_fd] = getCurrentEpochMillis();
-	delete requests[client_socket_fd].first;
-	requests[client_socket_fd].first = NULL;
+		clients[client_socket_fd].setLastConn(getCurrentEpochMillis());
+	clients[client_socket_fd].clearRequest();
 }
 
 // reads data from the client in (*events)[pos] and stores it in buffers[client_socket_fd]
@@ -206,40 +197,33 @@ void TCPListener::readData(int pos)
 		return ;
 	}
 	if (bytesRead == 0) {
-		if (isTimeout(last_conn[client_socket_fd], getCurrentEpochMillis(), CONN_TIMEOUT)) {
+		if (isTimeout(clients[client_socket_fd].getLastConn(), getCurrentEpochMillis(), CONN_TIMEOUT)) {
 			std::cerr << "Timeout met: ";
 			disconnectClient(pos);
 		}
 	} else
-		last_conn[client_socket_fd] = getCurrentEpochMillis();
+		clients[client_socket_fd].setLastConn(getCurrentEpochMillis());
 	if (bytesRead > 0) {
-		buffers[client_socket_fd].push_back(std::string(buffer, bytesRead));
+		clients[client_socket_fd].addToRequestBuffer(std::string(buffer, bytesRead));
 		//std::cerr << "Trying to create request from " << buffers[client_socket_fd].size() << " chunks\n";
-		Request r = Request(buffers[client_socket_fd]);
+		Request r = Request(clients[client_socket_fd].getRequestBuffer());
 		if (r.getContentLen() != r.getBody().length()) // if body not complete, skip
 			return ;
-		//std::cerr << "---- PARSED REQUEST ----\n"
-		//		<< r << std::endl
-		//		<< "---- PARSED REQUEST END ----\n";
-		
-		requests[client_socket_fd].first = new Request(r);
-		requests[client_socket_fd].second = true;
+		//std::cerr << "---- PARSED REQUEST ----\n" << r << std::endl << "---- PARSED REQUEST END ----\n";
+		clients[client_socket_fd].setRequest(r);
 		createResponse(client_socket_fd);
 	}
 }
 
 //disconnects a client
 void TCPListener::disconnectClient(int pos) {
-	int client_socket_fd = (*events)[pos].data.fd;
+	int client_fd = (*events)[pos].data.fd;
 
-	std::cerr << "[ " << Response::get_current_date() << " ] : Closing connection with " << client_socket_fd << std::endl;
 	// remove from epoll and close connection
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, (*events)[pos].data.fd, NULL) == -1) {
 		perror("epoll_ctl");
 	}
-	close(client_socket_fd);
-	buffers[client_socket_fd].clear();
-	last_conn[client_socket_fd] = __LONG_LONG_MAX__;
+	clients[client_fd].disconnect(client_fd);
 }
 
 Response TCPListener::analizer(const Request &request)
@@ -293,7 +277,6 @@ Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location
 	}
 	else
 	{
-		// TODO: change it to forbidden instead of internal server error
 		return Response(500, "500 Error\nCould not open the requested file.", true);
 	}
 }
@@ -314,7 +297,6 @@ Response TCPListener::Head(std::pair<std::string, std::string> uri_pair, Locatio
 	}
 	else
 	{
-		// TODO: change it to forbidden instead of internal server error
 		return Response(500, "500 Error\nCould not open the requested file.", true);
 	}
 }
@@ -325,7 +307,6 @@ Response TCPListener::Delete(std::pair<std::string, std::string> uri_pair, Locat
 	if (remove(file_path.c_str()) == 0)
 		return Response(204, "", false);
 	else
-		// TODO: change it to forbidden instead of internal server error
 		return Response(500, "500 Error\nCould not open the requested file.", true);
 }
 

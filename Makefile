@@ -21,7 +21,8 @@ SRC =	srcs/config_parser.cpp \
 		srcs/TCPListener.cpp \
 		srcs/Request.cpp \
 		srcs/Response.cpp \
-		srcs/CgiHandler.cpp
+		srcs/CgiHandler.cpp \
+		srcs/Client.cpp
 OBJ = $(SRC:.cpp=.o)
 TEST_SCRIPT = tests/test.py
 

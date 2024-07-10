@@ -17,6 +17,7 @@
 # include "Server.hpp"
 # include "Response.hpp"
 # include "Request.hpp"
+# include "Client.hpp"
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <sys/epoll.h>
@@ -36,12 +37,13 @@
 
 # define MAX_EVENTS 128
 
-# define CONN_TIMEOUT 30
+# define CONN_TIMEOUT 30 //timeout for connections in seconds
 
 class Request;
 class Server;
 class Response;
 class Location;
+class Client;
 
 class TCPListener {
 	private:
@@ -52,10 +54,11 @@ class TCPListener {
 		epoll_event					event;
 		std::vector<epoll_event>	*events;
 		Server						*server;
-		std::vector<std::string>	buffers[4096];
+		/* std::string					buffers[4096];
 		Response					*responses[4096];
 		std::pair<Request *, bool>	requests[4096];
-		long long					last_conn[4096];
+		long long					last_conn[4096]; */
+		Client						clients[4096];
 
 		Response	analizer(const Request& request);
 		void		readData(int pos);
