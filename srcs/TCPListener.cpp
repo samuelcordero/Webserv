@@ -302,5 +302,9 @@ Response TCPListener::analizer(const Request &request)
 			break;
 		}
 	}
-	return (Response(404, "404 Error\nWe tried, but couldn't find :(", true));
+	// return (Response(404, "404 Error\nWe tried, but couldn't find :(", true));
+	// throw response exception, assign response to variable and return it
+	Response e = Response::ResponseException(404);
+	Response r = e.responseException(404);
+	return r;
 }

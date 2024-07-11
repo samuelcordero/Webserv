@@ -32,6 +32,15 @@ public:
 	void setStatusCode(const int &status_code);
 
 	Response &operator=(const Response &other);
+
+	// exceptions
+	class ResponseException : public std::exception
+	{
+	public:
+		Response responseException(int status_code);
+		const char *what() const throw();
+		int getCode();
+	};
 };
 
 std::ostream &operator<<(std::ostream &out, const Response &resp);

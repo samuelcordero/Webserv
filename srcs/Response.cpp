@@ -49,30 +49,6 @@ Response::Response(int status_code, const std::string &body, bool include_body)
     case 204:
         this->status_message = "No Content";
         break;
-    case 400:
-        this->status_message = "Bad Request";
-        break;
-    case 401:
-        this->status_message = "Unauthorized";
-        break;
-    case 403:
-        this->status_message = "Forbidden";
-        break;
-    case 404:
-        this->status_message = "Not Found";
-        break;
-    case 405:
-        this->status_message = "Method Not Allowed";
-        break;
-    case 406:
-        this->status_message = "Not Acceptable";
-        break;
-    case 408:
-        this->status_message = "Request Timeout";
-        break;
-    case 409:
-        this->status_message = "Conflict";
-        break;
     default:
         this->status_code = 500;
         this->status_message = "Internal Server Error";
@@ -134,6 +110,54 @@ void Response::setStatusMessage(const std::string &status_message)
 void Response::setStatusCode(const int &status_code)
 {
     this->status_code = status_code;
+}
+
+Response Response::ResponseException::responseException(int status_code)
+{
+    Response r;
+    std::cerr << "ResponseException thrown code: " << status_code << std::endl;
+    r.setStatusCode(status_code);
+    switch (status_code)
+    {
+    case 400:
+        r.setStatusMessage("Bad Request");
+        break;
+    case 401:
+        r.setStatusMessage("Unauthorized");
+        break;
+    case 403:
+        r.setStatusMessage("Forbidden");
+        break;
+    case 404:
+        r.setStatusMessage("Not Found");
+        break;
+    case 405:
+        r.setStatusMessage("Method Not Allowed");
+        break;
+    case 406:
+        r.setStatusMessage("Not Acceptable");
+        break;
+    case 408:
+        r.setStatusMessage("Request Timeout");
+        break;
+    case 409:
+        r.setStatusMessage("Conflict");
+        break;
+    default:
+        r.setStatusCode(500);
+        r.setStatusMessage("Internal Server Error");
+        break;
+    }
+    std::string temp_message;
+    temp_message += "HTTP/1.1 " + _int_to_string(status_code) + " " + r.getStatusMessage() + "\r\n";
+    temp_message += "Date: " + r._get_current_date() + "\r\n";
+    temp_message += "Server: CustomC++Server/1.0\r\n";
+    temp_message += "Content-Type: text/html; charset=UTF-8\r\n";
+    temp_message += "Content-Length: " + _int_to_string(r.getBody().length()) + "\r\n";
+    temp_message += "Connection: keep-alive\r\n";
+    temp_message += "\r\n";
+    r.setMessage(temp_message);
+    return r;
 }
 
 Response &Response::operator=(const Response &other)
