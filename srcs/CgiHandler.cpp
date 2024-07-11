@@ -41,7 +41,6 @@ void CGIHandler::readPostData()
 
 void CGIHandler::executeCGIScript()
 {
-    int pipefd[2];
     if (pipe(pipefd) == -1)
     {
         std::cerr << "Failed to create pipe\n";
@@ -156,4 +155,9 @@ void CGIHandler::waitForChildProcess(pid_t pid, int pipefd[])
 std::string CGIHandler::getOutputData()
 {
     return outputData;
+}
+
+int *CGIHandler::getPipeFd()
+{
+    return pipefd;
 }
