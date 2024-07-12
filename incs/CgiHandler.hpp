@@ -14,6 +14,7 @@ private:
     std::string scriptPath;
     std::string postData;
     std::string outputData;
+    int pipefd[2];
 
     // Environment variables
     std::string requestMethod;
@@ -26,6 +27,7 @@ private:
     void executeCGIScript();
     void setCGIEnvironment();
     void waitForChildProcess(pid_t pid, int pipefd[]);
+    int *getPipeFd();
 };
 
 #endif // CGI_HANDLER_HPP
