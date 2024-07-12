@@ -1,9 +1,11 @@
-#include "config_parser.hpp"
+#include "Controller.hpp"
 #include "CgiHandler.hpp"
 
 int main(int argc, char **argv)
 {
+	Controller c;
 	std::string config_file_path;
+
 	if (argc > 2) {
 		std::cerr << "Arguments should be one config file\n";
 		return (1);
@@ -12,7 +14,7 @@ int main(int argc, char **argv)
 		config_file_path = "config/default.conf";
 	else
 		config_file_path = argv[1];
-	Parser parse(config_file_path);
+
 	/* // test cgi
 	std::cout << "CGI TEST" << std::endl;
 	CGIHandler cgiHandler1("CGI/test.py");
@@ -25,5 +27,10 @@ int main(int argc, char **argv)
 	std::cout << "CGI TEST END" << std::endl;
 	// end of cgi test */
 
-	parse.run();
+	if (c.parse(config_file_path))
+		c.run();
+	else {
+		std::cerr << "Config file contains errors. Exiting...\n";
+		exit(EXIT_FAILURE);
+	}
 }

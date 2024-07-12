@@ -19,40 +19,11 @@
 TCPListener::TCPListener(int port, Server *server) : port(port)
 {
 	this->server = server;
-	epoll_fd = -1;
 	socket_fd = -1;
-	events = NULL;
+	this->eventManager = NULL;
 }
 
-TCPListener &TCPListener::operator=(const TCPListener &copy)
-{
-	// std::cerr << "called equal op tcp listener\n";
-	this->port = copy.port;
-	this->server = copy.server;
-	epoll_fd = -1;
-	socket_fd = -1;
-	events = NULL;
-	return (*this);
-}
-
-TCPListener::TCPListener(const TCPListener &copy, Server *s) : server(copy.server)
-{
-	// std::cerr << "called copy cons tcp listener\n";
-	*this = copy;
-	server = s;
-}
-
-TCPListener::~TCPListener()
-{
-	if (socket_fd > 0)
-		close(socket_fd);
-	if (epoll_fd > 0)
-		close(epoll_fd);
-	if (events)
-		delete events;
-}
-
-void TCPListener::start()
+int TCPListener::start()
 {
 	socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket_fd == -1)
@@ -78,80 +49,30 @@ void TCPListener::start()
 		perror("bind");
 		exit(EXIT_FAILURE);
 	}
-	// create a new epoll
-	epoll_fd = epoll_create(1024);
-	if (epoll_fd == -1)
-	{
-		perror("epoll_create");
-		exit(EXIT_FAILURE);
-	}
-
-	// assign listening socket to epoll
-	event.events = EPOLLIN;
-	event.data.fd = socket_fd;
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &event) == -1)
-	{
-		perror("epoll_ctl");
-		exit(EXIT_FAILURE);
-	}
-
 	// start listening through the socket
-	if (listen(socket_fd, 10) == -1)
+	if (listen(socket_fd, 16) == -1)
 	{
 		perror("Listening failed");
 		exit(EXIT_FAILURE);
 	}
-	events = new std::vector<epoll_event>(MAX_EVENTS);
 	std::cout << "Server listening on port " << port << "...\n";
+	// return socket to add to epoll
+	return socket_fd;
 }
 
-void TCPListener::run()
-{
-	// std::cout << "Server listening on port " << port << "...\n";
-
-	// wait for epoll notification for fd ready
-	int nbr_fds = epoll_wait(epoll_fd, events->data(), events->size(), 0);
-	if (nbr_fds == -1)
-	{
-		perror("epoll_wait");
-		return;
-	}
-
-	// loop through fds that are ready
-	for (int i = 0; i < nbr_fds; ++i)
-	{
-		if ((*events)[i].data.fd == socket_fd)
-		{
-			// handle new con
-			struct sockaddr_in client_addr;
-			socklen_t client_addr_len = sizeof(client_addr);
-			int client_socket_fd = accept(socket_fd, (struct sockaddr *)&client_addr, &client_addr_len);
-			if (client_socket_fd == -1)
-			{
-				perror("Accept failed");
-				continue;
-			}
-			clients[client_socket_fd].setLastConn(__LONG_LONG_MAX__);
-
-			// Add to epoll ctl
-			epoll_event client_event;
-			client_event.events = EPOLLIN | EPOLLOUT;
-			client_event.data.fd = client_socket_fd;
-			if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_socket_fd, &client_event) == -1)
-			{
-				perror("epoll ctl");
-				close(client_socket_fd);
-				exit(EXIT_FAILURE);
-			}
-
-			std::cerr << "[ " << Response::get_current_date() << " ] : Connection accepted from " << inet_ntoa(client_addr.sin_addr) << ":" << ntohs(client_addr.sin_port) << std::endl;
-		}
-		else if (clients[(*events)[i].data.fd].responseReady() && (*events)[i].events & EPOLLOUT) { //send client response if ready
-			sendData(i);
-		} else if ((*events)[i].events & EPOLLIN) { // read client data
-			readData(i);
-		}
-	}
+int TCPListener::checkEvent(epoll_event ev) {
+	if (ev.data.fd == socket_fd && ev.events & EPOLLIN) {
+		return newClient();
+	} else if (clients[ev.data.fd].responseReady() && matcher[ev.data.fd] == CLIENT && ev.events & EPOLLOUT){
+		return sendData(ev.data.fd);
+	} else if (matcher[ev.data.fd] == CLIENT && ev.events & EPOLLIN){
+		return readData(ev.data.fd);
+	} /* else if (matcher[fd] == CGIIN) {
+		// send request through
+	} else if (matcher[fd] == CGIOUT) {
+		// get cgi response from pipe
+	} */
+	return 0;
 }
 
 void TCPListener::createResponse(size_t i) {
@@ -161,69 +82,86 @@ void TCPListener::createResponse(size_t i) {
 	}
 }
 
-void TCPListener::sendData(int pos) { // sends data from responses[client_socket_fd] to the client in (*events)[pos]
-	int client_socket_fd = (*events)[pos].data.fd;
-	int bytes;
-
-	std::string message = clients[client_socket_fd].getResponseMessage();
-	bytes = send(client_socket_fd, message.c_str(), message.length(), 0);
-	clients[client_socket_fd].clearResponse();
-
-	const Request &r = clients[client_socket_fd].getRequest();
-	if (bytes == -1 || //if send fails, or request sends Connection close
-		(r.getHeaders().find("Connection") != r.getHeaders().end()
-		&& r.getHeaders()["Connection"] == "close")) {
-		disconnectClient(pos); //disconnect
-	} else
-		clients[client_socket_fd].setLastConn(getCurrentEpochMillis());
-	clients[client_socket_fd].clearRequest();
+int	TCPListener::newClient() {
+	// handle new con
+	struct sockaddr_in client_addr;
+	socklen_t client_addr_len = sizeof(client_addr);
+	std::cerr << "Accepting with fd " << socket_fd << "...\n";
+	int client_fd = accept(socket_fd, (struct sockaddr *)&client_addr, &client_addr_len);
+	if (client_fd == -1)
+	{
+		perror("Accept failed");
+		return 0;
+	}
+	clients[client_fd].setLastConn(getCurrentEpochMillis());
+	matcher[client_fd] = CLIENT;
+	std::cerr << "[ " << Response::get_current_date()
+		<< " ] : Connection accepted from " << inet_ntoa(client_addr.sin_addr)
+		<< ":" << ntohs(client_addr.sin_port) << " through fd " << client_fd
+		<< std::endl;
+	return client_fd;
 }
 
-// reads data from the client in (*events)[pos] and stores it in buffers[client_socket_fd]
+// reads data from the client in fd and stores it in buffers[fd]
 //tries to create a full request after reading, and stores the full request if it is succesfully created
-void TCPListener::readData(int pos) 
+int TCPListener::readData(int fd) 
 {
-	int client_socket_fd = (*events)[pos].data.fd;
 	char buffer[16384];
 	int bytesRead;
-	bytesRead = recv(client_socket_fd, buffer, sizeof(buffer), 0);
+	bytesRead = recv(fd, buffer, sizeof(buffer), 0);
 	//static int ctr;
 	//std::cerr << "read (" << buffer << ")\n";
 	//std::cerr << "Read " << bytesRead << " bytes\n";
 	if (bytesRead == -1)
 	{
 		perror("recv");
-		disconnectClient(pos);
-		return ;
+		disconnectClient(fd);
+		return 0;
 	}
 	if (bytesRead == 0) {
-		if (isTimeout(clients[client_socket_fd].getLastConn(), getCurrentEpochMillis(), CONN_TIMEOUT)) {
+		if (isTimeout(clients[fd].getLastConn(), getCurrentEpochMillis(), CONN_TIMEOUT)) {
 			std::cerr << "Timeout met: ";
-			disconnectClient(pos);
+			disconnectClient(fd);
 		}
 	} else
-		clients[client_socket_fd].setLastConn(getCurrentEpochMillis());
+		clients[fd].setLastConn(getCurrentEpochMillis());
 	if (bytesRead > 0) {
-		clients[client_socket_fd].addToRequestBuffer(std::string(buffer, bytesRead));
-		//std::cerr << "Trying to create request from " << buffers[client_socket_fd].size() << " chunks\n";
-		Request r = Request(clients[client_socket_fd].getRequestBuffer());
+		clients[fd].addToRequestBuffer(std::string(buffer, bytesRead));
+		//std::cerr << "Trying to create request from " << buffers[fd].size() << " chunks\n";
+		Request r = Request(clients[fd].getRequestBuffer());
 		if (r.getContentLen() != r.getBody().length()) // if body not complete, skip
-			return ;
+			return 0;
 		//std::cerr << "---- PARSED REQUEST ----\n" << r << std::endl << "---- PARSED REQUEST END ----\n";
-		clients[client_socket_fd].setRequest(r);
-		createResponse(client_socket_fd);
+		clients[fd].setRequest(r);
+		createResponse(fd);
 	}
+	return 0;
+}
+
+int TCPListener::sendData(int fd) { // sends data from responses[fd] to the client in that socket fd
+	int bytes;
+
+	std::string message = clients[fd].getResponseMessage();
+	bytes = send(fd, message.c_str(), message.length(), 0);
+	clients[fd].clearResponse();
+
+	const Request &r = clients[fd].getRequest();
+	if (bytes == -1 || //if send fails, or request sends Connection close
+		(r.getHeaders().find("Connection") != r.getHeaders().end()
+		&& r.getHeaders()["Connection"] == "close")) {
+		disconnectClient(fd); //disconnect
+	} else
+		clients[fd].setLastConn(getCurrentEpochMillis());
+	clients[fd].clearRequest();
+	return 0;
 }
 
 //disconnects a client
-void TCPListener::disconnectClient(int pos) {
-	int client_fd = (*events)[pos].data.fd;
-
-	// remove from epoll and close connection
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, (*events)[pos].data.fd, NULL) == -1) {
-		perror("epoll_ctl");
-	}
-	clients[client_fd].disconnect(client_fd);
+void TCPListener::disconnectClient(int fd) {
+	//send epoll ctl delete!!!!
+	eventManager->removeFromMonitoring(fd);
+	clients[fd].disconnect(fd);
+	matcher[fd] = 0;
 }
 
 Response TCPListener::analizer(const Request &request)
@@ -347,4 +285,35 @@ bool TCPListener::isTimeout(long long startMillis, long long endMillis, int thre
     long long diffMillis = endMillis - startMillis;
     long long diffSeconds = diffMillis / 1000;
     return diffSeconds >= thresholdSeconds;
+}
+
+int	TCPListener::getSocketFd() {
+	return socket_fd;
+}
+
+TCPListener &TCPListener::operator=(const TCPListener &copy)
+{
+	// std::cerr << "called equal op tcp listener\n";
+	this->port = copy.port;
+	this->server = copy.server;
+	socket_fd = -1;
+	eventManager = copy.eventManager;
+	return (*this);
+}
+
+TCPListener::TCPListener(const TCPListener &copy, Server *s) : server(copy.server)
+{
+	// std::cerr << "called copy cons tcp listener\n";
+	*this = copy;
+	server = s;
+}
+
+TCPListener::~TCPListener()
+{
+	if (socket_fd > 0)
+		close(socket_fd);
+}
+
+void	TCPListener::setEventManager(EventManager *eventManager) {
+	this->eventManager = eventManager;
 }

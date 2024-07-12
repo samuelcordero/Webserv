@@ -1,5 +1,14 @@
 #include "config_parser.hpp"
 
+Parser::Parser(std::string FilePath){
+	no_error = false;
+	this->filePath = FilePath;
+	this->trimComments();
+	this->splitWords();
+	if (this->setValues())
+		no_error = true;
+}
+
 std::string readConfigFile(std::string filePath){ //read the config file
 	std::ifstream file(filePath.c_str());
 
@@ -41,13 +50,6 @@ std::vector<std::string> splitConfigFile(std::string configFile) { //split the s
 		pos += delimiter.length();
 	}
 	return (servers);
-}
-
-Parser::Parser(std::string FilePath){
-	this->filePath = FilePath;
-	this->trimComments();
-	this->splitWords();
-	this->setValues();
 }
 
 Parser::~Parser(){}
@@ -144,12 +146,12 @@ int	Parser::setValues()
 		if (prevStatus == 1)
 		{
 			std::cerr << "Error non valid config file." << std::endl;
-			return (1);
+			return (0);
 		}
 		i++;
 	}
 	this->createServers();
-	return (0);
+	return (1);
 }
 
 static	bool finder(std::string word)
@@ -198,12 +200,12 @@ void	Parser::createServers()
 
 	for (size_t i = 0; i < Blocks.size(); i++)
 	{
-		this->Servers.push_back(Server(Blocks[i]));
+		this->servers.push_back(Server(Blocks[i]));
 		//std::cout << i << std::endl;
 	}
 }
 
-void	Parser::run()
+/* void	Parser::run()
 {
 	std::cerr << "Starting servers...\n";
 	for (size_t i = 0; i < this->Servers.size(); i++)
@@ -215,5 +217,10 @@ void	Parser::run()
 			this->Servers[i].serverRun();
 		}
 	}
+} */
+
+std::vector<Server> Parser::getServers() {
+	return servers;
 }
 
+bool Parser::noErrors() { return no_error; }

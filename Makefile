@@ -14,15 +14,17 @@ NAME = webserv
 CC = c++
 CPPFLAGS = -Wall -Wextra -Werror -std=c++98 -g3
 LDFLAGS = -I incs
-SRC =	srcs/config_parser.cpp \
+SRC =	srcs/Client.cpp \
+		srcs/CgiHandler.cpp \
+		srcs/config_parser.cpp \
+		srcs/Controller.cpp \
+		srcs/EventManager.cpp \
 		srcs/Location.cpp \
-		srcs/Server.cpp \
 		srcs/main.cpp \
-		srcs/TCPListener.cpp \
 		srcs/Request.cpp \
 		srcs/Response.cpp \
-		srcs/CgiHandler.cpp \
-		srcs/Client.cpp
+		srcs/Server.cpp \
+		srcs/TCPListener.cpp
 OBJ = $(SRC:.cpp=.o)
 TEST_SCRIPT = tests/test.py
 

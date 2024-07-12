@@ -163,15 +163,21 @@ void	Server::setMaxBodySize(size_t i)
 	}
 }
 
-void	Server::serverRun()
+/* void	Server::serverRun()
 {
-	/* std::cout << this->name << std::endl;
-	std::cout << this->listen << std::endl;
-	std::cout << this->port << std::endl;
-	std::cout << this->maxBodySize << std::endl; */
 	listener->run();
 }
+*/
 
-void	Server::start() {
-	listener->start();
+int	Server::start(EventManager *eventManager) {
+	listener->setEventManager(eventManager);
+	return listener->start();
+}
+
+int	Server::event(epoll_event ev) {
+	return listener->checkEvent(ev);
+}
+
+int Server::getSocketFd() {
+	return listener->getSocketFd();
 }

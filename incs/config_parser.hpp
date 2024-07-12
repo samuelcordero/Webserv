@@ -39,10 +39,11 @@ const	std::string keywords[] = {
 
 class Parser{
 	private: 
-		std::vector<Server>			Servers;
+		std::vector<Server>			servers;
 		std::vector<std::string>	words;
 		std::string					trimedFile;
 		std::string					filePath;
+		bool						no_error;
 
 	public:
 		Parser(std::string FilePath);
@@ -53,8 +54,9 @@ class Parser{
 		int		setValues();
 		int		getStatus(std::string word, int prevStatus);
 		void	createServers();
-		void	setFilePath(std::string filePath);
-		void	run();
+		//void	run();
+		std::vector<Server> getServers();
+		bool	noErrors();
 };
 
 std::vector<std::string> splitConfigFile(std::string configFile);
