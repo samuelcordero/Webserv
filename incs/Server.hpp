@@ -2,6 +2,7 @@
 
 #include "config_parser.hpp"
 #include "TCPListener.hpp"
+#include "EventManager.hpp"
 
 class Location;
 
@@ -36,5 +37,7 @@ class Server {
 		void		createLocation(size_t i);
 		void		setMaxBodySize(size_t i);
 		void		serverRun();
-		void		start();
+		int			start(EventManager *eventManager);
+		int			event(epoll_event ev);
+		int			getSocketFd();
 };

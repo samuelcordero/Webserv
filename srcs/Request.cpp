@@ -5,10 +5,11 @@
 // Request constructor that takes a string as an argument
 // The string is the raw HTTP request
 // The constructor parses the request and stores the method, URI, headers, and body
-Request::Request(std::string request)
+Request::Request(std::string &request)
 {
     size_t pos = 0, end_pos = 0;
 
+	content_len = 0;
     // Parse the request line (e.g., "GET / HTTP/1.1")
     end_pos = request.find("\r\n");
     std::string request_line = request.substr(pos, end_pos - pos);
@@ -41,7 +42,22 @@ Request::Request(std::string request)
     }
 
     // Parse body
-    body = request.substr(pos);
+	char	*end;
+	content_len = 0;
+	body = "";
+	if (headers.find("Content-Length") != headers.end()) { //generate body with content-length
+		content_len = std::strtol(headers["Content-Length"].c_str(), &end, 10);
+		if (*end != '\0') {
+			std::cerr << "Body may be too big!\n";
+		} else {
+			if (request.size() - pos >= content_len) {
+				body = request.substr(pos, content_len);
+				request = request.substr(pos + content_len);
+			} else {
+				body = "";
+			}
+		}
+	} else { request = ""; }
 }
 
 Request::Request(const Request &other)
@@ -50,6 +66,7 @@ Request::Request(const Request &other)
     uri = other.uri;
     headers = other.headers;
     body = other.body;
+	content_len = other.content_len;
 }
 
 Request &Request::operator=(const Request &other)
@@ -58,6 +75,7 @@ Request &Request::operator=(const Request &other)
     uri = other.uri;
     headers = other.headers;
     body = other.body;
+	content_len = other.content_len;
     return *this;
 }
 
@@ -109,4 +127,10 @@ int	Request::getNumMethod() const
 	if (this->method == "DELETE")
 		return (4);
 	return (8);
+}
+
+
+size_t	Request::getContentLen() const
+{
+	return (content_len);
 }

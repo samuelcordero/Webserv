@@ -2,6 +2,7 @@
 #define CGI_HANDLER_HPP
 
 #include <string>
+#include <sys/types.h>
 
 class CGIHandler
 {

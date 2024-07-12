@@ -10,7 +10,9 @@
 
 #include <string>
 #include <map>
+#include <vector>
 #include <iostream>
+#include <cstdlib>
 
 
 class Request
@@ -20,8 +22,9 @@ class Request
         std::string uri;
         std::map<std::string, std::string> headers;
         std::string body;
+		size_t		content_len;
     public:
-        Request(std::string);
+        Request(std::string &);
         Request(const Request&);
         Request& operator=(const Request&);
         ~Request();
@@ -31,6 +34,7 @@ class Request
         std::map<std::string, std::string> getHeaders() const;
         std::string getBody() const;
 		int			getNumMethod() const;
+		size_t		getContentLen() const;
 };
 
 std::ostream& operator<<(std::ostream&, const Request&);
