@@ -170,34 +170,37 @@ Response TCPListener::analizer(const Request &request)
 
 	std::pair<std::string, std::string> uri_pair = splitUri(request.getUri());
 
-	//std::cerr << "Building response for resource " << uri_pair.second << " at location " << uri_pair.first << std::endl;
+	std::cerr << "Building response for resource " << uri_pair.second << " at location " << uri_pair.first << std::endl;
 	for (size_t i = 0; i < locations.size(); i++)
 	{
 		if (locations[i].getUri() == uri_pair.first)
 		{
-			if (uri_pair.second == "")
-				uri_pair.second = locations[i].getIndex().front();
-			else
-			{
-				bool	flag = false;
-				std::vector<std::string>	tmp = locations[i].getIndex();
-				for (size_t j = 0; j < tmp.size(); j++)
-				{
-					if (uri_pair.second == tmp[i])
-					{
-						flag = true;
-						break;
-					}
-				}
-				if (flag == false)
-				{
-					return (Response(404, "404 Error\nWe tried, but couldn't find :(", true));
-				}
-			}
-			std::cerr << "requested method: " << request.getMethod() << std::endl;
-			std::cerr << "location method " << locations[i].getMethods() << std::endl;
 			if ((locations[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
+				if (uri_pair.second == "")
+					uri_pair.second = locations[i].getIndex().front();
+				else
+				{
+					bool	flag = false;
+					std::vector<std::string>	tmp = locations[i].getIndex();
+					for (size_t j = 0; j < tmp.size(); j++)
+					{
+						if (uri_pair.second == tmp[j])
+						{
+							flag = true;
+							break ;
+						}
+					}
+					if (flag == false)
+					{
+						return (Response(404, "404 Error\nWe tried, but couldn't find :(", true));
+					}
+				}
+				/* std::cerr << "requested method: " << request.getMethod()
+					<< " for uri " << uri_pair.first
+					<< " resource " << uri_pair.second << std::endl;
+				std::cerr << "location method " << locations[i].getMethods() << std::endl; */
+
 				if (request.getNumMethod() == 1)
 					return (Post(uri_pair, locations[i], request));
 				if (request.getNumMethod() == 2 && request.getMethod() == "GET")

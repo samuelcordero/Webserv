@@ -16,6 +16,8 @@ Location::Location(std::vector<std::string> locationBlock)
 		else if (locationBlock[i] == "root")
 			i = this->setRoot(i + 1, locationBlock);
 	}
+	if (this->uri[this->uri.size() - 1] != '/')
+		this->uri += "/";
 	//std::cout << this->cgi.first << " " << this->cgi.second << std::endl;
 	//std::cout << this->uri << std::endl;
 	//std::cout << this->flagsMethods << std::endl;
@@ -59,7 +61,7 @@ size_t	Location::setIndex(size_t i, std::vector<std::string> &locationBlock)
 		this->index.push_back(locationBlock[i]);
 		i++;
 	}
-	return (i + 1);
+	return (i);
 }
 
 size_t	Location::setMethods(size_t i, const std::vector<std::string> &locationBlock)
