@@ -6,7 +6,7 @@
 /*   By: agserran <agserran@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/15 13:02:58 by sacorder          #+#    #+#             */
-/*   Updated: 2024/07/01 16:58:42 by agserran         ###   ########.fr       */
+/*   Updated: 2024/07/15 13:02:33 by agserran         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -176,8 +176,26 @@ Response TCPListener::analizer(const Request &request)
 		if (locations[i].getUri() == uri_pair.first)
 		{
 			if (uri_pair.second == "")
-				uri_pair.second = locations[i].getIndex();
-			//std::cerr << "requested method: " << request.getMethod() << std::endl;
+				uri_pair.second = locations[i].getIndex().front();
+			else
+			{
+				bool	flag = false;
+				std::vector<std::string>	tmp = locations[i].getIndex();
+				for (size_t j = 0; j < tmp.size(); j++)
+				{
+					if (uri_pair.second == tmp[i])
+					{
+						flag = true;
+						break;
+					}
+				}
+				if (flag == false)
+				{
+					return (Response(404, "404 Error\nWe tried, but couldn't find :(", true));
+				}
+			}
+			std::cerr << "requested method: " << request.getMethod() << std::endl;
+			std::cerr << "location method " << locations[i].getMethods() << std::endl;
 			if ((locations[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
 				if (request.getNumMethod() == 1)

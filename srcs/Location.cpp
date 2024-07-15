@@ -29,6 +29,7 @@ Location::Location(const Location &other) {
 Location &Location::operator=(const Location &other) {
 	this->uri = other.uri;
 	this->root = other.root;
+	this->index.clear();
 	this->index = other.index;
 	this->flagsMethods = other.flagsMethods;
 	this->cgi = other.cgi;
@@ -53,13 +54,9 @@ size_t	Location::setRoot(size_t i, std::vector<std::string> &locationBlock)
 
 size_t	Location::setIndex(size_t i, std::vector<std::string> &locationBlock)
 {
-	while (i < locationBlock.size())
+	while (i < locationBlock.size() && locationBlock[i] != ";")
 	{
-		if (locationBlock[i + 1] == ";")
-		{
-			this->index = locationBlock[i];
-			break;
-		}
+		this->index.push_back(locationBlock[i]);
 		i++;
 	}
 	return (i + 1);
@@ -111,7 +108,7 @@ std::string Location::getRoot()
 	return (this->root);
 }
 
-std::string Location::getIndex()
+std::vector<std::string> Location::getIndex()
 {
 	return (this->index);
 }
