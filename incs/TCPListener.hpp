@@ -36,13 +36,15 @@
 # include "Request.hpp"
 # include "Client.hpp"
 # include "EventManager.hpp"
+# include "CgiHandler.hpp"
 
 # define MAX_EVENTS 128
 
 # define CONN_TIMEOUT 30 //timeout for connections in seconds
 
 # define CLIENT 1
-# define CGI 2
+# define CGI_WRITE 2
+# define CGI_READ 3
 
 
 class Request;
@@ -57,13 +59,10 @@ class TCPListener {
 		int							port;
 		struct sockaddr_in			server_addr;
 		Server						*server;
-		/* std::string					buffers[4096];
-		Response					*responses[4096];
-		std::pair<Request *, bool>	requests[4096];
-		long long					last_conn[4096]; */
 		Client						clients[4096];
 		char						matcher[4096];
 		EventManager				*eventManager;
+		CGIHandler					*cgi_handlers[4096];
 
 		Response	analizer(const Request& request);
 		int			newClient();
@@ -79,6 +78,11 @@ class TCPListener {
 		long long	getCurrentEpochMillis();
 		bool 		isTimeout(long long startMillis, long long endMillis, int thresholdSeconds);
 		void		disconnectClient(int pos);
+		bool		checkCgiRequest(int fd);
+		void		createCgiHandler(int fd);
+		int			Client2CGI(int fd);
+		int			CGI2Client(int fd);
+
 	public:
 		TCPListener(int port, Server *server);
 		~TCPListener();

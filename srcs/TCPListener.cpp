@@ -11,10 +11,6 @@
 /* ************************************************************************** */
 
 #include "TCPListener.hpp"
-#include <cstdlib>
-#include <iterator>
-#include <sys/epoll.h>
-#include <sys/socket.h>
 
 TCPListener::TCPListener(int port, Server *server) : port(port)
 {
@@ -67,18 +63,21 @@ int TCPListener::checkEvent(epoll_event ev) {
 		return sendData(ev.data.fd);
 	} else if (matcher[ev.data.fd] == CLIENT && ev.events & EPOLLIN){
 		return readData(ev.data.fd);
-	} /* else if (matcher[fd] == CGIIN) {
-		// send request through
-	} else if (matcher[fd] == CGIOUT) {
-		// get cgi response from pipe
-	} */
+	} else if (matcher[ev.data.fd] == CGI_WRITE) {
+		return Client2CGI(ev.data.fd);
+	} else if (matcher[ev.data.fd] == CGI_READ) {
+		return CGI2Client(ev.data.fd);
+	}
 	return 0;
 }
 
 void TCPListener::createResponse(size_t i) {
 	if (clients[i].requestReady())
 	{
-		clients[i].setResponse(analizer(clients[i].getRequest()));
+		if (checkCgiRequest(i))
+			createCgiHandler(i);
+		else
+			clients[i].setResponse(analizer(clients[i].getRequest()));
 	}
 }
 
@@ -158,7 +157,6 @@ int TCPListener::sendData(int fd) { // sends data from responses[fd] to the clie
 
 //disconnects a client
 void TCPListener::disconnectClient(int fd) {
-	//send epoll ctl delete!!!!
 	eventManager->removeFromMonitoring(fd);
 	clients[fd].disconnect(fd);
 	matcher[fd] = 0;
@@ -337,4 +335,108 @@ TCPListener::~TCPListener()
 
 void	TCPListener::setEventManager(EventManager *eventManager) {
 	this->eventManager = eventManager;
+}
+
+bool	TCPListener::checkCgiRequest(int fd) {
+	Request r = clients[fd].getRequest();
+	std::vector<Location> &locations = this->server->getLocations();
+
+	std::pair<std::string, std::string> uri_pair = splitUri(r.getUri());
+	if (uri_pair.second == "")
+		return false;
+
+	std::string::size_type pos = uri_pair.second.rfind('.');
+
+    if (pos == std::string::npos) {
+        return false;
+    }
+
+	std::string file_ext = uri_pair.second.substr(pos);
+
+	std::cerr << "File ext: " << file_ext << std::endl;
+	if (file_ext == ".py" || file_ext == ".php") {
+		for (size_t i = 0; i < locations.size(); ++i) {
+			if (locations[i].getUri() == uri_pair.first) {
+				if (locations[i].getCgi().first == file_ext
+					&& ((locations[i].getMethods() & r.getNumMethod()) == POST))
+						return true;
+				return false;
+			}
+		}
+	}
+
+    return false;
+}
+
+void	TCPListener::createCgiHandler(int fd) {
+	size_t	i = 0;
+	std::vector<Location> &locations = this->server->getLocations();
+	Request r = clients[fd].getRequest();
+
+	std::pair<std::string, std::string> uri_pair = splitUri(r.getUri());
+
+	for (i = 0; i < locations.size(); ++i) {
+		if (locations[i].getUri() == uri_pair.first)
+			break ;
+	}
+
+	std::string scriptPath = locations[i].getRoot() + "/" + uri_pair.second;
+
+	CGIHandler *handler = new CGIHandler(scriptPath, locations[i].getCgi().second, fd);
+	clients[fd].setCGI(handler);
+	cgi_handlers[handler->getWriteEnd()] = handler;
+	cgi_handlers[handler->getReadEnd()] = handler;
+	std::cerr << "Adding write end with fd " << handler->getWriteEnd() << "...\n";
+	eventManager->addToMonitoring(handler->getWriteEnd(), EPOLLOUT);
+	matcher[handler->getWriteEnd()] = CGI_WRITE;
+	std::cerr << "Adding read end with fd " << handler->getReadEnd() << "...\n";
+	eventManager->addToMonitoring(handler->getReadEnd(), EPOLLIN);
+	matcher[handler->getReadEnd()] = CGI_READ;
+}
+
+int	TCPListener::Client2CGI(int fd) {
+	int client_fd = cgi_handlers[fd]->getClientFd();
+	int	cgi_stdin = cgi_handlers[fd]->getWriteEnd();
+
+	Request r = clients[client_fd].getRequest();
+	const char* data_ptr = r.getBody().c_str();
+	size_t data_left = r.getBody().size();
+
+	while (data_left > 0) {
+		ssize_t bytes_written = write(cgi_stdin, data_ptr, data_left);
+		if (bytes_written < 0) {
+
+			perror("write");
+			return -1;
+		}
+		data_ptr += bytes_written;
+		data_left -= bytes_written;
+	}
+
+	eventManager->removeFromMonitoring(cgi_stdin);
+	close(cgi_stdin);
+	cgi_handlers[fd] = NULL;
+	return 0;
+}
+
+int	TCPListener::CGI2Client(int fd) {
+	std::string response_buffer;
+	char		read_buffer[4096];
+	size_t		bytes_read;
+	CGIHandler *handler = cgi_handlers[fd];
+
+	int client_fd = handler->getClientFd();
+	int	cgi_stdout = handler->getReadEnd();
+
+	while ((bytes_read = read(cgi_stdout, read_buffer, sizeof(read_buffer))) > 0)
+		response_buffer.append(read_buffer, bytes_read);
+
+	clients[client_fd].setResponse(Response(200, response_buffer, true));
+	eventManager->removeFromMonitoring(cgi_stdout);
+	close(cgi_stdout);
+	//maybe check kill (avoid zombie process)
+	
+	cgi_handlers[fd] = NULL;
+	delete handler;
+	return 0;
 }

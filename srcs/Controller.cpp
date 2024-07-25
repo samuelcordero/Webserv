@@ -16,7 +16,8 @@ bool	Controller::parse(std::string config_file_path) {
 
 void	Controller::solveEvent(epoll_event ev) {
 	Server *s = matcher[ev.data.fd];
-
+	if (!s)
+		s = matcher[4]; //ñapa
 	size_t new_fd = s->event(ev);
 
 	if (new_fd > 0) {

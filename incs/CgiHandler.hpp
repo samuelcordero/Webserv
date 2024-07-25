@@ -7,15 +7,21 @@
 class CGIHandler
 {
 public:
-    CGIHandler(const std::string &scriptPath);
+    CGIHandler(const std::string &scriptPath, const std::string &interpreter, int client_fd);
     void handleRequest();
     std::string getOutputData();
+	int	getWriteEnd();
+	int getReadEnd();
+	int getClientFd();
 
 private:
     std::string scriptPath;
     std::string postData;
     std::string outputData;
-    int pipefd[2];
+	std::string interpreter;
+    int pipein[2];
+	int pipeout[2];
+	int	client_fd;
 
     // Environment variables
     std::string requestMethod;
@@ -28,7 +34,6 @@ private:
     void executeCGIScript();
     void setCGIEnvironment();
     void waitForChildProcess(pid_t pid, int pipefd[]);
-    int *getPipeFd();
 };
 
 #endif // CGI_HANDLER_HPP

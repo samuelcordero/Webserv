@@ -18,10 +18,14 @@ Location::Location(std::vector<std::string> locationBlock)
 	}
 	if (this->uri[this->uri.size() - 1] != '/')
 		this->uri += "/";
-	//std::cout << this->cgi.first << " " << this->cgi.second << std::endl;
-	//std::cout << this->uri << std::endl;
-	//std::cout << this->flagsMethods << std::endl;
-	//std::cout << this->index << std::endl;
+	std::cout << "\n new location with uri " << uri << std::endl;
+	std::cout << "methods: " <<  this->flagsMethods << std::endl;
+	std::cout << "cgi: " << this->cgi.first << " " << this->cgi.second << std::endl;
+	std::cout << "Index:" << std::endl;
+	for (size_t c = 0; c < index.size(); ++c) {
+		std::cout << index[c] << std::endl;
+	}
+	std::cout << "Index end" << std::endl;
 }
 
 Location::Location(const Location &other) {
@@ -78,7 +82,7 @@ size_t	Location::setMethods(size_t i, const std::vector<std::string> &locationBl
 			std::cerr << "Method not suported: " << locationBlock[i] << std::endl;
 		i++;
 	}
-	return (i + 1);
+	return (i);
 }
 
 size_t	Location::setCgi(size_t i, std::vector<std::string> &locationBlock)
@@ -90,9 +94,10 @@ size_t	Location::setCgi(size_t i, std::vector<std::string> &locationBlock)
 			this->cgi.first = locationBlock[i - 2];
 			this->cgi.second = locationBlock[i - 1];
 			break ;
-		}		
+		}
+		++i;
 	}
-	return (i + 1);
+	return (i);
 }
 
 int	Location::getMethods()
@@ -113,4 +118,8 @@ std::string Location::getRoot()
 std::vector<std::string> Location::getIndex()
 {
 	return (this->index);
+}
+
+std::pair<std::string, std::string>	Location::getCgi() {
+	return cgi;
 }
