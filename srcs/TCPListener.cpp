@@ -56,7 +56,7 @@ int TCPListener::start()
 	return socket_fd;
 }
 
-int TCPListener::checkEvent(epoll_event ev) {
+std::pair<int, int> TCPListener::checkEvent(epoll_event ev) {
 	if (ev.data.fd == socket_fd && ev.events & EPOLLIN) {
 		return newClient();
 	} else if (clients[ev.data.fd].responseReady() && matcher[ev.data.fd] == CLIENT && ev.events & EPOLLOUT){
@@ -68,20 +68,21 @@ int TCPListener::checkEvent(epoll_event ev) {
 	} else if (matcher[ev.data.fd] == CGI_READ) {
 		return CGI2Client(ev.data.fd);
 	}
-	return 0;
+	return std::pair<int, int>(0, 0);
 }
 
-void TCPListener::createResponse(size_t i) {
+std::pair<int, int> TCPListener::createResponse(size_t i) {
 	if (clients[i].requestReady())
 	{
 		if (checkCgiRequest(i))
-			createCgiHandler(i);
+			return createCgiHandler(i);
 		else
 			clients[i].setResponse(analizer(clients[i].getRequest()));
 	}
+	return std::pair<int, int>(0,0);
 }
 
-int	TCPListener::newClient() {
+std::pair<int, int>	TCPListener::newClient() {
 	// handle new con
 	struct sockaddr_in client_addr;
 	socklen_t client_addr_len = sizeof(client_addr);
@@ -90,7 +91,7 @@ int	TCPListener::newClient() {
 	if (client_fd == -1)
 	{
 		perror("Accept failed");
-		return 0;
+		return std::pair<int, int>(0,0);
 	}
 	clients[client_fd].setLastConn(getCurrentEpochMillis());
 	matcher[client_fd] = CLIENT;
@@ -98,12 +99,12 @@ int	TCPListener::newClient() {
 		<< " ] : Connection accepted from " << inet_ntoa(client_addr.sin_addr)
 		<< ":" << ntohs(client_addr.sin_port) << " through fd " << client_fd
 		<< std::endl;
-	return client_fd;
+	return std::pair<int, int>(client_fd, 0);
 }
 
 // reads data from the client in fd and stores it in buffers[fd]
 //tries to create a full request after reading, and stores the full request if it is succesfully created
-int TCPListener::readData(int fd) 
+std::pair<int, int> TCPListener::readData(int fd) 
 {
 	char buffer[16384];
 	int bytesRead;
@@ -115,7 +116,7 @@ int TCPListener::readData(int fd)
 	{
 		perror("recv");
 		disconnectClient(fd);
-		return 0;
+		return std::pair<int, int>(0,0);
 	}
 	if (bytesRead == 0) {
 		if (isTimeout(clients[fd].getLastConn(), getCurrentEpochMillis(), CONN_TIMEOUT)) {
@@ -129,15 +130,15 @@ int TCPListener::readData(int fd)
 		//std::cerr << "Trying to create request from " << buffers[fd].size() << " chunks\n";
 		Request r = Request(clients[fd].getRequestBuffer());
 		if (r.getContentLen() != r.getBody().length()) // if body not complete, skip
-			return 0;
+			return std::pair<int, int>(0,0);
 		//std::cerr << "---- PARSED REQUEST ----\n" << r << std::endl << "---- PARSED REQUEST END ----\n";
 		clients[fd].setRequest(r);
-		createResponse(fd);
+		return createResponse(fd);
 	}
-	return 0;
+	return std::pair<int, int>(0,0);
 }
 
-int TCPListener::sendData(int fd) { // sends data from responses[fd] to the client in that socket fd
+std::pair<int, int> TCPListener::sendData(int fd) { // sends data from responses[fd] to the client in that socket fd
 	int bytes;
 
 	std::string message = clients[fd].getResponseMessage();
@@ -152,7 +153,7 @@ int TCPListener::sendData(int fd) { // sends data from responses[fd] to the clie
 	} else
 		clients[fd].setLastConn(getCurrentEpochMillis());
 	clients[fd].clearRequest();
-	return 0;
+	return std::pair<int, int>(0,0);
 }
 
 //disconnects a client
@@ -368,7 +369,7 @@ bool	TCPListener::checkCgiRequest(int fd) {
     return false;
 }
 
-void	TCPListener::createCgiHandler(int fd) {
+std::pair<int, int>	TCPListener::createCgiHandler(int fd) {
 	size_t	i = 0;
 	std::vector<Location> &locations = this->server->getLocations();
 	Request r = clients[fd].getRequest();
@@ -381,20 +382,21 @@ void	TCPListener::createCgiHandler(int fd) {
 	}
 
 	std::string scriptPath = locations[i].getRoot() + "/" + uri_pair.second;
+	
+	std::cerr << "Building cgi response for resource " << uri_pair.second << " at location " << uri_pair.first << std::endl;
 
 	CGIHandler *handler = new CGIHandler(scriptPath, locations[i].getCgi().second, fd);
 	clients[fd].setCGI(handler);
 	cgi_handlers[handler->getWriteEnd()] = handler;
 	cgi_handlers[handler->getReadEnd()] = handler;
 	std::cerr << "Adding write end with fd " << handler->getWriteEnd() << "...\n";
-	eventManager->addToMonitoring(handler->getWriteEnd(), EPOLLOUT);
 	matcher[handler->getWriteEnd()] = CGI_WRITE;
 	std::cerr << "Adding read end with fd " << handler->getReadEnd() << "...\n";
-	eventManager->addToMonitoring(handler->getReadEnd(), EPOLLIN);
 	matcher[handler->getReadEnd()] = CGI_READ;
+	return std::pair<int, int>(handler->getReadEnd(), handler->getWriteEnd());
 }
 
-int	TCPListener::Client2CGI(int fd) {
+std::pair<int, int>	TCPListener::Client2CGI(int fd) {
 	int client_fd = cgi_handlers[fd]->getClientFd();
 	int	cgi_stdin = cgi_handlers[fd]->getWriteEnd();
 
@@ -407,7 +409,7 @@ int	TCPListener::Client2CGI(int fd) {
 		if (bytes_written < 0) {
 
 			perror("write");
-			return -1;
+			return std::pair<int, int>(0,0);
 		}
 		data_ptr += bytes_written;
 		data_left -= bytes_written;
@@ -416,10 +418,10 @@ int	TCPListener::Client2CGI(int fd) {
 	eventManager->removeFromMonitoring(cgi_stdin);
 	close(cgi_stdin);
 	cgi_handlers[fd] = NULL;
-	return 0;
+	return std::pair<int, int>(0,0);
 }
 
-int	TCPListener::CGI2Client(int fd) {
+std::pair<int, int>	TCPListener::CGI2Client(int fd) {
 	std::string response_buffer;
 	char		read_buffer[4096];
 	size_t		bytes_read;
@@ -437,6 +439,5 @@ int	TCPListener::CGI2Client(int fd) {
 	//maybe check kill (avoid zombie process)
 	
 	cgi_handlers[fd] = NULL;
-	delete handler;
-	return 0;
+	return std::pair<int, int>(0,0);
 }

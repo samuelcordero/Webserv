@@ -16,13 +16,18 @@ bool	Controller::parse(std::string config_file_path) {
 
 void	Controller::solveEvent(epoll_event ev) {
 	Server *s = matcher[ev.data.fd];
-	if (!s)
-		s = matcher[4]; //ñapa
-	size_t new_fd = s->event(ev);
+	std::pair<int, int> fd_pair = s->event(ev);
 
-	if (new_fd > 0) {
-		matcher[new_fd] = s;
-		event_manager.addToMonitoring(new_fd, EPOLLIN | EPOLLOUT);
+	if (fd_pair.first > 0) {
+		if (fd_pair.second == 0) { //if new client
+			matcher[fd_pair.first] = s;
+			event_manager.addToMonitoring(fd_pair.first, EPOLLIN | EPOLLOUT);
+		} else { //else cgi
+			matcher[fd_pair.first] = s;
+			event_manager.addToMonitoring(fd_pair.first, EPOLLIN);
+			matcher[fd_pair.second] = s;
+			event_manager.addToMonitoring(fd_pair.second, EPOLLOUT);
+		}
 	}
 }
 

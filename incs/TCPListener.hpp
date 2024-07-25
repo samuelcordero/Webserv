@@ -65,10 +65,10 @@ class TCPListener {
 		CGIHandler					*cgi_handlers[4096];
 
 		Response	analizer(const Request& request);
-		int			newClient();
-		int			readData(int fd);
-		int			sendData(int fd);
-		void		createResponse(size_t i);
+		std::pair<int, int>	newClient();
+		std::pair<int, int>	readData(int fd);
+		std::pair<int, int>	sendData(int fd);
+		std::pair<int, int>	createResponse(size_t i);
 		Response 	Get(std::pair<std::string, std::string> uri_pair, Location &location);
 		Response 	Head(std::pair<std::string, std::string> uri_pair, Location &location);
 		Response 	Delete(std::pair<std::string, std::string> uri_pair, Location &location);
@@ -79,9 +79,9 @@ class TCPListener {
 		bool 		isTimeout(long long startMillis, long long endMillis, int thresholdSeconds);
 		void		disconnectClient(int pos);
 		bool		checkCgiRequest(int fd);
-		void		createCgiHandler(int fd);
-		int			Client2CGI(int fd);
-		int			CGI2Client(int fd);
+		std::pair<int, int>	createCgiHandler(int fd);
+		std::pair<int, int>	Client2CGI(int fd);
+		std::pair<int, int>	CGI2Client(int fd);
 
 	public:
 		TCPListener(int port, Server *server);
@@ -89,9 +89,9 @@ class TCPListener {
 		TCPListener(const TCPListener& copy, Server *s);
 		TCPListener& operator=(const TCPListener& copy);
 		int		start();
-		int		checkEvent(epoll_event ev);
 		int		getSocketFd();
 		void	setEventManager(EventManager *eventManager);
+		std::pair<int, int>		checkEvent(epoll_event ev);
 		//void	run();
 };
 
