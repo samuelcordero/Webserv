@@ -12,6 +12,14 @@ CGIHandler::CGIHandler(const std::string &scriptPath, const std::string &interpr
 	handleRequest();
 }
 
+CGIHandler::~CGIHandler() {}
+
+void	CGIHandler::checkAndKill() {
+	if (!executionDone())
+		kill(pid, SIGKILL);
+}
+
+
 void CGIHandler::handleRequest()
 {
     readEnvironmentVariables();
@@ -57,7 +65,7 @@ void CGIHandler::executeCGIScript()
         return;
     }
 
-    pid_t pid = fork();
+    pid = fork();
     if (pid == 0)
     {
         // Child process
@@ -133,12 +141,16 @@ void CGIHandler::setCGIEnvironment()
         setenv("POST_DATA", postData.c_str(), 1);
 }
 
-void CGIHandler::waitForChildProcess(pid_t pid, int pipefd[])
+bool CGIHandler::waitForChildProcess()
 {
     int status;
     pid_t result = waitpid(pid, &status, WNOHANG);
 
-    if (result == 0)
+	if (result == 0) // process not done
+		return false;
+	return true;
+
+    /* if (result == 0)
     {
         // Child process is still running
         sleep(1); // Wait for 1 seconds
@@ -171,7 +183,7 @@ void CGIHandler::waitForChildProcess(pid_t pid, int pipefd[])
     else
     {
         std::cerr << "CGI script execution failed\n";
-    }
+    } */
 }
 
 std::string CGIHandler::getOutputData()
@@ -192,4 +204,8 @@ int CGIHandler::getWriteEnd()
 int CGIHandler::getClientFd()
 {
     return client_fd;
+}
+
+bool	CGIHandler::executionDone() {
+	return waitForChildProcess();
 }

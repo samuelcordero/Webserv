@@ -65,8 +65,13 @@ std::pair<int, int> TCPListener::checkEvent(epoll_event ev) {
 		return readData(ev.data.fd);
 	} else if (matcher[ev.data.fd] == CGI_WRITE) {
 		return Client2CGI(ev.data.fd);
-	} else if (matcher[ev.data.fd] == CGI_READ) {
+	} else if (matcher[ev.data.fd] == CGI_READ && cgi_handlers[ev.data.fd]->executionDone()) {
 		return CGI2Client(ev.data.fd);
+	} else if (matcher[ev.data.fd] == CGI_READ) {
+		if (isTimeout(clients[cgi_handlers[ev.data.fd]->getClientFd()].getLastConn(), getCurrentEpochMillis(), CONN_TIMEOUT)) {
+			std::cerr << "Timeout met: ";
+			disconnectClient(cgi_handlers[ev.data.fd]->getClientFd());
+		}
 	}
 	return std::pair<int, int>(0, 0);
 }
@@ -158,9 +163,19 @@ std::pair<int, int> TCPListener::sendData(int fd) { // sends data from responses
 
 //disconnects a client
 void TCPListener::disconnectClient(int fd) {
+	CGIHandler *cgi = clients[fd].getCGI();
+	if (cgi) {
+		if (!cgi->executionDone()){
+			eventManager->removeFromMonitoring(cgi->getReadEnd());
+			close(cgi->getReadEnd());
+			cgi->checkAndKill();
+		}
+		clients[fd].setCGI(NULL);
+	}
 	eventManager->removeFromMonitoring(fd);
 	clients[fd].disconnect(fd);
 	matcher[fd] = 0;
+	std::cerr << "Connection closed with " << fd << std::endl;
 }
 
 Response TCPListener::analizer(const Request &request)
@@ -397,6 +412,7 @@ std::pair<int, int>	TCPListener::createCgiHandler(int fd) {
 }
 
 std::pair<int, int>	TCPListener::Client2CGI(int fd) {
+	std::cerr << "on client2cgi\n";
 	int client_fd = cgi_handlers[fd]->getClientFd();
 	int	cgi_stdin = cgi_handlers[fd]->getWriteEnd();
 
@@ -407,9 +423,8 @@ std::pair<int, int>	TCPListener::Client2CGI(int fd) {
 	while (data_left > 0) {
 		ssize_t bytes_written = write(cgi_stdin, data_ptr, data_left);
 		if (bytes_written < 0) {
-
 			perror("write");
-			return std::pair<int, int>(0,0);
+			return std::pair<int, int>(0, 0);
 		}
 		data_ptr += bytes_written;
 		data_left -= bytes_written;
@@ -418,26 +433,28 @@ std::pair<int, int>	TCPListener::Client2CGI(int fd) {
 	eventManager->removeFromMonitoring(cgi_stdin);
 	close(cgi_stdin);
 	cgi_handlers[fd] = NULL;
-	return std::pair<int, int>(0,0);
+	return std::pair<int, int>(0, 0);
 }
 
 std::pair<int, int>	TCPListener::CGI2Client(int fd) {
+	std::cerr << "on cgi2client\n";
 	std::string response_buffer;
 	char		read_buffer[4096];
 	size_t		bytes_read;
-	CGIHandler *handler = cgi_handlers[fd];
+	int client_fd = cgi_handlers[fd]->getClientFd();
+	int	cgi_stdout = cgi_handlers[fd]->getReadEnd();
 
-	int client_fd = handler->getClientFd();
-	int	cgi_stdout = handler->getReadEnd();
 
-	while ((bytes_read = read(cgi_stdout, read_buffer, sizeof(read_buffer))) > 0)
+	while ((bytes_read = read(cgi_stdout, read_buffer, sizeof(read_buffer))) > 0) {
 		response_buffer.append(read_buffer, bytes_read);
-
+		std::cerr << "read " << bytes_read << " bytes from cgi\n";
+	}
 	clients[client_fd].setResponse(Response(200, response_buffer, true));
 	eventManager->removeFromMonitoring(cgi_stdout);
 	close(cgi_stdout);
 	//maybe check kill (avoid zombie process)
-	
+	clients[client_fd].setCGI(NULL);
 	cgi_handlers[fd] = NULL;
+	std::cerr << "cgi response ready\n";
 	return std::pair<int, int>(0,0);
 }

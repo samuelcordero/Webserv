@@ -32,7 +32,7 @@ class Request
         std::string getMethod() const;
         std::string getUri() const;
         std::map<std::string, std::string> getHeaders() const;
-        std::string getBody() const;
+        const std::string &getBody() const;
 		int			getNumMethod() const;
 		size_t		getContentLen() const;
 };
