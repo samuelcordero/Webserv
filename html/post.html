@@ -5,8 +5,20 @@
     <title>CGI Test</title>
 </head>
 <body>
-    <h1>CGI Test Form</h1>
+    <h1>CGI Test Form - incredible content ahead!!1</h1>
     <form action="/cgi/toupper.py" method="post">
+        <label for="input">Enter some text:</label>
+        <input type="text" id="input" name="input">
+        <button type="submit">Submit</button>
+    </form>
+	<h1>CGI Test Form - Art</h1>
+    <form action="/cgi/toart.py" method="post">
+        <label for="input">Enter some text:</label>
+        <input type="text" id="input" name="input">
+        <button type="submit">Submit</button>
+    </form>
+	<h1>CGI Test Form - possibly an infinite loop</h1>
+    <form action="/cgi/infinity.py" method="post">
         <label for="input">Enter some text:</label>
         <input type="text" id="input" name="input">
         <button type="submit">Submit</button>

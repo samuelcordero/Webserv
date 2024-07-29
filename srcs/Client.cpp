@@ -124,3 +124,10 @@ void	Client::setCGI(CGIHandler *handler) {
 CGIHandler	*Client::getCGI() {
 	return cgi;
 }
+void	Client::setCgiStartTime(long long now) {
+	cgi_start = now;
+}
+
+long long	Client::getCgiStartTime() {
+	return cgi_start;
+}

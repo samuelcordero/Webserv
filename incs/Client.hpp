@@ -20,6 +20,7 @@ class Client {
 		std::pair<Request *, bool>	request;
 		long long					last_conn;
 		CGIHandler					*cgi;
+		long long					cgi_start;
 	public:
 		Client();
 		//Client();
@@ -42,6 +43,8 @@ class Client {
 		void				setResponse(const Response &r);
 		void				setCGI(CGIHandler *handler);
 		CGIHandler			*getCGI();
+		void				setCgiStartTime(long long now);
+		long long			getCgiStartTime();
 };
 
 #endif
