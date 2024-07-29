@@ -174,7 +174,7 @@ int	Server::start(EventManager *eventManager) {
 	return listener->start();
 }
 
-int	Server::event(epoll_event ev) {
+std::pair<int, int>	Server::event(epoll_event ev) {
 	return listener->checkEvent(ev);
 }
 

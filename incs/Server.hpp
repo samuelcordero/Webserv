@@ -38,6 +38,6 @@ class Server {
 		void		setMaxBodySize(size_t i);
 		void		serverRun();
 		int			start(EventManager *eventManager);
-		int			event(epoll_event ev);
 		int			getSocketFd();
+		std::pair<int, int>	event(epoll_event ev);
 };

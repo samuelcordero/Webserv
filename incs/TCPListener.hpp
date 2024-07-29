@@ -36,14 +36,16 @@
 # include "Request.hpp"
 # include "Client.hpp"
 # include "EventManager.hpp"
+# include "CgiHandler.hpp"
 
 # define MAX_EVENTS 128
 
-# define CONN_TIMEOUT 30 //timeout for connections in seconds
+# define CONN_TIMEOUT 15 //timeout for connections in seconds
+# define CGI_TIMEOUT 10 //timeout for CGI in seconds
 
 # define CLIENT 1
-# define CGI 2
-
+# define CGI_WRITE 2
+# define CGI_READ 3
 
 class Request;
 class Server;
@@ -57,37 +59,45 @@ class TCPListener {
 		int							port;
 		struct sockaddr_in			server_addr;
 		Server						*server;
-		/* std::string					buffers[4096];
-		Response					*responses[4096];
-		std::pair<Request *, bool>	requests[4096];
-		long long					last_conn[4096]; */
 		Client						clients[4096];
 		char						matcher[4096];
 		EventManager				*eventManager;
+		CGIHandler					*cgi_handlers[4096];
 
-		Response	analizer(const Request& request);
-		int			newClient();
-		int			readData(int fd);
-		int			sendData(int fd);
-		void		createResponse(size_t i);
-		Response 	Get(std::pair<std::string, std::string> uri_pair, Location &location);
-		Response 	Head(std::pair<std::string, std::string> uri_pair, Location &location);
-		Response 	Delete(std::pair<std::string, std::string> uri_pair, Location &location);
-		Response 	Post(std::pair<std::string, std::string> uri_pair, Location &location, const Request &request);
+		//TCPListenerClientUtils.cpp
+		std::pair<int, int>	newClient();
+		std::pair<int, int>	readData(int fd);
+		std::pair<int, int>	sendData(int fd);
+		void				disconnectClient(int pos);
+		std::pair<int, int>	createResponse(size_t i);
+
+		//TCPListenerConnMethods.cpp
+		Response			analizer(const Request& request);
+		Response 			Get(std::pair<std::string, std::string> uri_pair, Location &location);
+		Response 			Head(std::pair<std::string, std::string> uri_pair, Location &location);
+		Response 			Delete(std::pair<std::string, std::string> uri_pair, Location &location);
+		Response 			Post(std::pair<std::string, std::string> uri_pair, Location &location, const Request &request);
+		std::pair<int, int>	Client2CGI(int fd);
+		std::pair<int, int>	CGI2Client(int fd);
+
+		//TCPListenerUtils.cpp
 		std::pair<std::string,
-		std::string> splitUri(std::string uri);
-		long long	getCurrentEpochMillis();
-		bool 		isTimeout(long long startMillis, long long endMillis, int thresholdSeconds);
-		void		disconnectClient(int pos);
+			std::string>	splitUri(std::string uri);
+		long long			getCurrentEpochMillis();
+		bool 				isTimeout(long long startMillis, long long endMillis, int thresholdSeconds);
+		bool				checkCgiRequest(int fd);
+		std::pair<int, int>	createCgiHandler(int fd);
+		void				killCGI(int fd);
+
 	public:
 		TCPListener(int port, Server *server);
 		~TCPListener();
 		TCPListener(const TCPListener& copy, Server *s);
 		TCPListener& operator=(const TCPListener& copy);
 		int		start();
-		int		checkEvent(epoll_event ev);
 		int		getSocketFd();
 		void	setEventManager(EventManager *eventManager);
+		std::pair<int, int>		checkEvent(epoll_event ev);
 		//void	run();
 };
 

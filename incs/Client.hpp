@@ -7,6 +7,7 @@
 # include <string>
 # include <utility>
 # include <unistd.h>
+# include "CgiHandler.hpp"
 
 class Response;
 class Request;
@@ -18,6 +19,8 @@ class Client {
 		std::pair<Response *, bool>	response;
 		std::pair<Request *, bool>	request;
 		long long					last_conn;
+		CGIHandler					*cgi;
+		long long					cgi_start;
 	public:
 		Client();
 		//Client();
@@ -38,6 +41,10 @@ class Client {
 		std::string			&getRequestBuffer();
 		void				setRequest(const Request &r);
 		void				setResponse(const Response &r);
+		void				setCGI(CGIHandler *handler);
+		CGIHandler			*getCGI();
+		void				setCgiStartTime(long long now);
+		long long			getCgiStartTime();
 };
 
 #endif

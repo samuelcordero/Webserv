@@ -24,7 +24,10 @@ SRC =	srcs/Client.cpp \
 		srcs/Request.cpp \
 		srcs/Response.cpp \
 		srcs/Server.cpp \
-		srcs/TCPListener.cpp
+		srcs/TCPListener/TCPListener.cpp \
+		srcs/TCPListener/TCPListenerClientUtils.cpp \
+		srcs/TCPListener/TCPListenerConnMethods.cpp \
+		srcs/TCPListener/TCPListenerUtils.cpp 
 OBJ = $(SRC:.cpp=.o)
 TEST_SCRIPT = tests/test.py
 

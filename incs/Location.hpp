@@ -10,7 +10,7 @@ enum Methods {
 
 class Location {
 	private:
-		std::string							index;
+		std::vector<std::string>			index;
 		std::string 						uri;
 		std::string							root;
 		int									flagsMethods;
@@ -21,8 +21,10 @@ class Location {
 		~Location();
 		std::string					getUri();
 		std::string					getRoot();
-		std::string					getIndex();
-		int							getMethods();	
+		std::vector<std::string>	getIndex();
+		int							getMethods();
+		std::pair<std::string, std::string>	getCgi();
+	
 		size_t						setMethods(size_t i, const std::vector<std::string> &locationBlock);
 		size_t						setIndex(size_t i, std::vector<std::string> &locationBlock);
 		size_t						setCgi(size_t i, std::vector<std::string> &locationBlock);

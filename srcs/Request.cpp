@@ -98,7 +98,7 @@ std::map<std::string, std::string> Request::getHeaders() const
     return headers;
 }
 
-std::string Request::getBody() const
+const std::string &Request::getBody() const
 {
     return body;
 }

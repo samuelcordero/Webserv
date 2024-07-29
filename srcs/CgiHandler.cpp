@@ -7,8 +7,18 @@
 #include <cstring>
 #include <vector>
 
-CGIHandler::CGIHandler(const std::string &scriptPath)
-    : scriptPath(scriptPath) {}
+CGIHandler::CGIHandler(const std::string &scriptPath, const std::string &interpreter,int client_fd)
+    : scriptPath(scriptPath), interpreter(interpreter), client_fd(client_fd) {
+	handleRequest();
+}
+
+CGIHandler::~CGIHandler() {}
+
+void	CGIHandler::checkAndKill() {
+	if (!executionDone())
+		kill(pid, SIGKILL);
+}
+
 
 void CGIHandler::handleRequest()
 {
@@ -41,27 +51,43 @@ void CGIHandler::readPostData()
 
 void CGIHandler::executeCGIScript()
 {
-    if (pipe(pipefd) == -1)
+    if (pipe(pipein) == -1)
     {
         std::cerr << "Failed to create pipe\n";
         return;
     }
 
-    pid_t pid = fork();
+	if (pipe(pipeout) == -1)
+    {
+        std::cerr << "Failed to create pipe\n";
+		close(pipein[0]);
+        close(pipein[1]);
+        return;
+    }
+
+    pid = fork();
     if (pid == 0)
     {
         // Child process
-        close(pipefd[0]);               // Close read end of pipe
-        dup2(pipefd[1], STDOUT_FILENO); // Redirect stdout to pipe
-        dup2(pipefd[1], STDERR_FILENO); // Redirect stderr to pipe
-        close(pipefd[1]);
+        close(pipeout[0]);               // Close read end of pipe
+        dup2(pipeout[1], STDOUT_FILENO); // Redirect stdout to pipe
+        dup2(pipeout[1], STDERR_FILENO); // Redirect stderr to pipe
+		close(pipeout[1]);
+
+		close(pipein[1]);               // Close read end of pipe
+        dup2(pipein[0], STDIN_FILENO); // Redirect stdin to pipe
+		close(pipein[0]);
 
         setCGIEnvironment();
 
         // Prepare arguments for execve
         std::vector<char *> argv;
+		argv.push_back(const_cast<char *>(interpreter.c_str()));
         argv.push_back(const_cast<char *>(scriptPath.c_str()));
         argv.push_back(NULL); // The last element of argv must be NULL
+
+		/* for (int i = 0; argv[i]; ++i)
+			std::cout << argv[i] << std::endl; */
 
         // Prepare environment variables for execve
         std::vector<char *> envp;
@@ -77,7 +103,7 @@ void CGIHandler::executeCGIScript()
             envp.push_back(const_cast<char *>(("POST_DATA=" + postData).c_str()));
         envp.push_back(NULL); // The last element of envp must be NULL
 
-        execve(scriptPath.c_str(), argv.data(), envp.data());
+        execve(interpreter.c_str(), argv.data(), envp.data());
 
         // If execve fails, the following lines will execute
         std::cerr << "Failed to execute CGI script\n";
@@ -86,14 +112,18 @@ void CGIHandler::executeCGIScript()
     else if (pid > 0)
     {
         // Parent process
-        close(pipefd[1]); // Close write end of pipe
-        waitForChildProcess(pid, pipefd);
-        close(pipefd[0]);
+        close(pipeout[1]); // Close write end of pipe
+        //waitForChildProcess(pid, pipefd);
+        close(pipein[0]);
     }
     else
     {
         // Fork failed
         std::cerr << "Failed to fork process\n";
+		close(pipein[0]);
+        close(pipein[1]);
+		close(pipeout[0]);
+        close(pipeout[1]);
     }
 }
 
@@ -111,12 +141,16 @@ void CGIHandler::setCGIEnvironment()
         setenv("POST_DATA", postData.c_str(), 1);
 }
 
-void CGIHandler::waitForChildProcess(pid_t pid, int pipefd[])
+bool CGIHandler::waitForChildProcess()
 {
     int status;
     pid_t result = waitpid(pid, &status, WNOHANG);
 
-    if (result == 0)
+	if (result == 0) // process not done
+		return false;
+	return true;
+
+    /* if (result == 0)
     {
         // Child process is still running
         sleep(1); // Wait for 1 seconds
@@ -149,7 +183,7 @@ void CGIHandler::waitForChildProcess(pid_t pid, int pipefd[])
     else
     {
         std::cerr << "CGI script execution failed\n";
-    }
+    } */
 }
 
 std::string CGIHandler::getOutputData()
@@ -157,7 +191,21 @@ std::string CGIHandler::getOutputData()
     return outputData;
 }
 
-int *CGIHandler::getPipeFd()
+int CGIHandler::getReadEnd()
 {
-    return pipefd;
+    return pipeout[0];
+}
+
+int CGIHandler::getWriteEnd()
+{
+    return pipein[1];
+}
+
+int CGIHandler::getClientFd()
+{
+    return client_fd;
+}
+
+bool	CGIHandler::executionDone() {
+	return waitForChildProcess();
 }

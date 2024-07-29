@@ -7,6 +7,7 @@ Client::Client() {
 	response.second = false;
 	request.first = NULL;
 	request.second = false;
+	cgi = NULL;
 }
 
 Client::Client(const Client &other) {
@@ -20,6 +21,7 @@ Client::Client(const Client &other) {
 	if (other.request.first)
 		request.first = new Request(*other.request.first);
 	request.second = other.request.second;
+	cgi = other.cgi;
 }
 
 Client::~Client() {
@@ -45,6 +47,7 @@ Client &Client::operator=(const Client &other) {
 		if (other.request.first)
 			request.first = new Request(*other.request.first);
 		request.second = other.request.second;
+		cgi = other.cgi;
 	}
 	return (*this);
 }
@@ -110,4 +113,21 @@ void Client::disconnect(int fd) {
 	close(fd);
 	request_buffer.clear();
 	last_conn = __LONG_LONG_MAX__;
+}
+
+void	Client::setCGI(CGIHandler *handler) {
+	if (cgi)
+		delete cgi;
+	cgi = handler;
+}
+
+CGIHandler	*Client::getCGI() {
+	return cgi;
+}
+void	Client::setCgiStartTime(long long now) {
+	cgi_start = now;
+}
+
+long long	Client::getCgiStartTime() {
+	return cgi_start;
 }
