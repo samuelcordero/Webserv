@@ -1,12 +1,14 @@
 #include "Controller.hpp"
 #include "CgiHandler.hpp"
+#include "Indexer.hpp"
 
 int main(int argc, char **argv)
 {
 	Controller c;
 	std::string config_file_path;
 
-	if (argc > 2) {
+	if (argc > 2)
+	{
 		std::cerr << "Arguments should be one config file\n";
 		return (1);
 	}
@@ -27,9 +29,16 @@ int main(int argc, char **argv)
 	std::cout << "CGI TEST END" << std::endl;
 	// end of cgi test */
 
+	// directory listing test
+	Indexer indexer("/");
+	std::cout << "Indexer path: " << indexer.getPath() << std::endl;
+	std::cout << "Indexer html: " << indexer.getHtml() << std::endl;
+	// end of directory listing test
+
 	if (c.parse(config_file_path))
 		c.run();
-	else {
+	else
+	{
 		std::cerr << "Config file contains errors. Exiting...\n";
 		exit(EXIT_FAILURE);
 	}

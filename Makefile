@@ -20,6 +20,7 @@ SRC =	srcs/Client.cpp \
 		srcs/Controller.cpp \
 		srcs/EventManager.cpp \
 		srcs/Location.cpp \
+		srcs/Indexer.cpp \
 		srcs/main.cpp \
 		srcs/Request.cpp \
 		srcs/Response.cpp \

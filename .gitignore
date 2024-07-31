@@ -1,6 +1,7 @@
 .vscode
 a.out
 */*.o
+*.o
 webserv
 .idea/
 __pycache__/
