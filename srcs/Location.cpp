@@ -3,7 +3,8 @@
 Location::Location(std::vector<std::string> locationBlock)
 {
 	flagsMethods = 0;
-	for (size_t i = 0;i < locationBlock.size(); i++)
+	autoindex = false;
+	for (size_t i = 0; i < locationBlock.size(); i++)
 	{
 		if (locationBlock[i][0] == '/')
 			this->uri = locationBlock[i];
@@ -15,6 +16,8 @@ Location::Location(std::vector<std::string> locationBlock)
 			i = this->setCgi(i + 1, locationBlock);
 		else if (locationBlock[i] == "root")
 			i = this->setRoot(i + 1, locationBlock);
+		else if (locationBlock[i] == "autoindex")
+			i = this->setAutoIndex(i + 1, locationBlock);
 	}
 	if (this->uri[this->uri.size() - 1] != '/')
 		this->uri += "/";
@@ -22,6 +25,7 @@ Location::Location(std::vector<std::string> locationBlock)
 	std::cout << "methods: " <<  this->flagsMethods << std::endl;
 	std::cout << "cgi: " << this->cgi.first << " " << this->cgi.second << std::endl;
 	std::cout << "Index:" << std::endl;
+	std::cout << "Autoindex: " << autoindex << std::endl;
 	for (size_t c = 0; c < index.size(); ++c) {
 		std::cout << index[c] << std::endl;
 	}
@@ -39,6 +43,7 @@ Location &Location::operator=(const Location &other) {
 	this->index = other.index;
 	this->flagsMethods = other.flagsMethods;
 	this->cgi = other.cgi;
+	this->autoindex = other.autoindex;
 	return *this;
 }
 
@@ -100,9 +105,31 @@ size_t	Location::setCgi(size_t i, std::vector<std::string> &locationBlock)
 	return (i);
 }
 
+size_t	Location::setAutoIndex(size_t i, std::vector<std::string> &locationBlock) {
+	while (locationBlock[i] != ";")
+	{
+		if (locationBlock[i] == "on" || locationBlock[i] == "true")
+			this->autoindex = true;
+		else
+			this->autoindex = false;
+		++i;
+	}
+	return (i);
+}
+
+
 int	Location::getMethods()
 {
 	return (this->flagsMethods);
+}
+
+bool	Location::hasAutoIndex() {
+	return autoindex;
+}
+
+std::string	Location::getAutoIndex() {
+	Indexer i(root);
+	return i.getHtml();
 }
 
 std::string	Location::getUri()

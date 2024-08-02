@@ -143,6 +143,7 @@ int	Parser::setValues()
 	while (i < this->words.size())
 	{
 		prevStatus = this->getStatus(this->words[i], prevStatus);
+		//std::cerr << "at word " <<  this->words[i] << " with status " << prevStatus << std::endl;
 		if (prevStatus == 1)
 		{
 			std::cerr << "Error non valid config file." << std::endl;
@@ -156,7 +157,7 @@ int	Parser::setValues()
 
 static	bool finder(std::string word)
 {
-	for (size_t i = 0; i < 6; i++)
+	for (size_t i = 0; i < sizeof(keywords) / sizeof(keywords[0]); i++)
 	{
 		if (keywords[i] == word)
 			return true;
@@ -204,20 +205,6 @@ void	Parser::createServers()
 		//std::cout << i << std::endl;
 	}
 }
-
-/* void	Parser::run()
-{
-	std::cerr << "Starting servers...\n";
-	for (size_t i = 0; i < this->Servers.size(); i++)
-		this->Servers[i].start();
-	std::cerr << "Started " << this->Servers.size() << " servers!\n";
-	while (true) {
-		for (size_t i = 0; i < this->Servers.size(); i++)
-		{
-			this->Servers[i].serverRun();
-		}
-	}
-} */
 
 std::vector<Server> Parser::getServers() {
 	return servers;
