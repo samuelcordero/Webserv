@@ -11,7 +11,6 @@
 class EventManager {
 	private:
 		int							epoll_fd;
-		epoll_event					event;
 		std::vector<epoll_event>	*events;
 	public:
 		EventManager();
