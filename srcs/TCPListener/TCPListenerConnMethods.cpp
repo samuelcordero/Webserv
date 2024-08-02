@@ -14,7 +14,9 @@ Response TCPListener::analizer(const Request &request)
 		{
 			if ((locations[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
-				if (uri_pair.second == "")
+				if (uri_pair.second == "" && locations[i].hasAutoIndex())
+					return (Response(200, locations[i].getAutoIndex(), true));
+				else if (uri_pair.second == "")
 					uri_pair.second = locations[i].getIndex().front();
 				else
 				{

@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: bazuara <bazuara@student.42madrid.com>     +#+  +:+       +#+         #
+#    By: sacorder <sacorder@student.42madrid.com    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/02/04 17:08:31 by sacorder          #+#    #+#              #
-#    Updated: 2024/06/28 11:19:47 by bazuara          ###   ########.fr        #
+#    Updated: 2024/08/02 17:00:05 by sacorder         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -19,8 +19,8 @@ SRC =	srcs/Client.cpp \
 		srcs/config_parser.cpp \
 		srcs/Controller.cpp \
 		srcs/EventManager.cpp \
-		srcs/Location.cpp \
 		srcs/Indexer.cpp \
+		srcs/Location.cpp \
 		srcs/main.cpp \
 		srcs/Request.cpp \
 		srcs/Response.cpp \

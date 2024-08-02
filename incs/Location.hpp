@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config_parser.hpp"
+#include "Indexer.hpp"
 
 enum Methods {
 	POST = 1,
@@ -15,6 +16,7 @@ class Location {
 		std::string							root;
 		int									flagsMethods;
 		std::pair<std::string, std::string>	cgi;
+		bool								autoindex;
 	public:
 		Location(std::vector<std::string> locationBlock);
 		Location(const Location &other);
@@ -23,11 +25,14 @@ class Location {
 		std::string					getRoot();
 		std::vector<std::string>	getIndex();
 		int							getMethods();
+		bool						hasAutoIndex();
+		std::string					getAutoIndex();
 		std::pair<std::string, std::string>	getCgi();
 	
 		size_t						setMethods(size_t i, const std::vector<std::string> &locationBlock);
 		size_t						setIndex(size_t i, std::vector<std::string> &locationBlock);
 		size_t						setCgi(size_t i, std::vector<std::string> &locationBlock);
 		size_t						setRoot(size_t i, std::vector<std::string> &locationBlock);
+		size_t						setAutoIndex(size_t i, std::vector<std::string> &locationBlock);
 		Location					&operator=(const Location &other);
 };

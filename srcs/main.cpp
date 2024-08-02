@@ -28,13 +28,13 @@ int main(int argc, char **argv)
 	std::cout << "CGI TEST: Begining of output data 2 -> " << cgiHandler2.getOutputData() << "<- End of output data 2." << std::endl;
 	std::cout << "CGI TEST END" << std::endl;
 	// end of cgi test */
-
+/* 
 	// directory listing test
 	Indexer indexer("/");
 	std::cout << "Indexer path: " << indexer.getPath() << std::endl;
 	std::cout << "Indexer html: " << indexer.getHtml() << std::endl;
 	// end of directory listing test
-
+ */
 	if (c.parse(config_file_path))
 		c.run();
 	else
