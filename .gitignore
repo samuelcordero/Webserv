@@ -1,7 +1,8 @@
 .vscode
 a.out
-*/*.o
 webserv
+*/*/*.o
+*/*.o
 .idea/
 __pycache__/
 ubuntu_tester
