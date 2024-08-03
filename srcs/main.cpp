@@ -1,6 +1,7 @@
 #include "Controller.hpp"
 #include "CgiHandler.hpp"
 #include "Indexer.hpp"
+#include "extraFunctions.hpp"
 
 int main(int argc, char **argv)
 {
@@ -28,13 +29,39 @@ int main(int argc, char **argv)
 	std::cout << "CGI TEST: Begining of output data 2 -> " << cgiHandler2.getOutputData() << "<- End of output data 2." << std::endl;
 	std::cout << "CGI TEST END" << std::endl;
 	// end of cgi test */
-/* 
-	// directory listing test
-	Indexer indexer("/");
-	std::cout << "Indexer path: " << indexer.getPath() << std::endl;
-	std::cout << "Indexer html: " << indexer.getHtml() << std::endl;
-	// end of directory listing test
- */
+	/*
+		// directory listing test
+		Indexer indexer("/");
+		std::cout << "Indexer path: " << indexer.getPath() << std::endl;
+		std::cout << "Indexer html: " << indexer.getHtml() << std::endl;
+		// end of directory listing test
+	 */
+
+	// MIME type test
+	std::string filename;
+	std::string mimeType;
+
+	filename = "index.html";
+	mimeType = getMimeType(filename);
+	std::cout << "The MIME type of " << filename << " is: " << mimeType << std::endl;
+
+	filename = "photo.jpg";
+	mimeType = getMimeType(filename);
+	std::cout << "The MIME type of " << filename << " is: " << mimeType << std::endl;
+
+	filename = "song.mp3";
+	mimeType = getMimeType(filename);
+	std::cout << "The MIME type of " << filename << " is: " << mimeType << std::endl;
+
+	filename = "document.pdf";
+	mimeType = getMimeType(filename);
+	std::cout << "The MIME type of " << filename << " is: " << mimeType << std::endl;
+
+	filename = "archive.zip";
+	mimeType = getMimeType(filename);
+	std::cout << "The MIME type of " << filename << " is: " << mimeType << std::endl;
+	// end of MIME type test
+
 	if (c.parse(config_file_path))
 		c.run();
 	else
