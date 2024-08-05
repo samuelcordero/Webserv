@@ -17,6 +17,7 @@ private:
 public:
 	Response();
 	Response(int status_code, const std::string &body, bool include_body);
+	Response(int status_code, const std::string &body, bool include_body, const std::string &filename);
 	Response(const Response &other);
 	~Response();
 

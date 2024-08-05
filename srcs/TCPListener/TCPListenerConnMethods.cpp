@@ -18,7 +18,7 @@ Response TCPListener::analizer(const Request &request)
 					return (Response(200, locations[i].getAutoIndex(), true));
 				else if (uri_pair.second == "")
 					uri_pair.second = locations[i].getIndex().front();
-				else
+				else if (!locations[i].hasAutoIndex())
 				{
 					bool	flag = false;
 					std::vector<std::string>	tmp = locations[i].getIndex();
@@ -72,7 +72,7 @@ Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location
 		buffer << file.rdbuf();
 		std::string file_contents = buffer.str();
 		file.close();
-		return Response(200, file_contents, true);
+		return Response(200, file_contents, true, file_path);
 	}
 	else
 	{
