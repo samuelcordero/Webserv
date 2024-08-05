@@ -14,11 +14,12 @@ NAME = webserv
 CC = c++
 CPPFLAGS = -Wall -Wextra -Werror -std=c++98 -g3
 LDFLAGS = -I incs
-SRC =	srcs/Client.cpp \
-		srcs/CgiHandler.cpp \
+SRC =	srcs/CgiHandler.cpp \
+		srcs/Client.cpp \
 		srcs/config_parser.cpp \
 		srcs/Controller.cpp \
 		srcs/EventManager.cpp \
+		srcs/extraFunctions.cpp \
 		srcs/Indexer.cpp \
 		srcs/Location.cpp \
 		srcs/main.cpp \
