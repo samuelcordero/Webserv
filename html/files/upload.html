@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Subida de Archivos</title>
+</head>
+<body>
+    <h1>Sube tu archivo</h1>
+    <form action="/cgi/upload.py" method="post" enctype="multipart/form-data">
+        <label for="file">Selecciona un archivo:</label>
+        <input type="file" id="file" name="file" required>
+        <button type="submit">Subir archivo</button>
+    </form>
+</body>
+</html>

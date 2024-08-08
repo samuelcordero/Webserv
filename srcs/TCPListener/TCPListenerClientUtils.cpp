@@ -29,8 +29,8 @@ std::pair<int, int> TCPListener::readData(int fd)
 	int bytesRead;
 	bytesRead = recv(fd, buffer, sizeof(buffer), 0);
 	//static int ctr;
-	//std::cerr << "read (" << buffer << ")\n";
-	//std::cerr << "Read " << bytesRead << " bytes\n";
+	std::cerr << "read (" << buffer << ")\n";
+	std::cerr << "Read " << bytesRead << " bytes\n";
 	if (bytesRead == -1)
 	{
 		perror("recv");
@@ -46,7 +46,6 @@ std::pair<int, int> TCPListener::readData(int fd)
 		clients[fd].setLastConn(getCurrentEpochMillis());
 	if (bytesRead > 0) {
 		clients[fd].addToRequestBuffer(std::string(buffer, bytesRead));
-		//std::cerr << "Trying to create request from " << buffers[fd].size() << " chunks\n";
 		Request r = Request(clients[fd].getRequestBuffer());
 		if (r.getContentLen() != r.getBody().length()) // if body not complete, skip
 			return std::pair<int, int>(0,0);

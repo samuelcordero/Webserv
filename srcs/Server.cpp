@@ -1,5 +1,10 @@
 #include "Server.hpp"
 
+Server::Server() {
+	listener = NULL;
+	errorHandler = NULL;
+}
+
 Server::Server(std::string serverBlock)
 {
 	this->block = serverBlock;
@@ -8,6 +13,7 @@ Server::Server(std::string serverBlock)
 	this->splitBlock();
 	this->fillValues();
 	listener = new TCPListener(port, this);
+	errorHandler = new Errors(errorMap);
 }
 
 Server& Server::operator=(const Server& copy)
@@ -23,7 +29,9 @@ Server& Server::operator=(const Server& copy)
 	this->words = copy.words;
 	this->maxBodySize = copy.maxBodySize;
 	this->listener = new TCPListener(*copy.listener, this);
-	//this->cgi = copy.cgi;
+	//delete errorHandler;
+	errorMap = copy.errorMap;
+	this->errorHandler = new Errors(copy.errorMap);
 	return (*this);
 }
 
@@ -35,6 +43,7 @@ Server::Server(const Server& copy)
 
 Server::~Server() {
 	delete listener;
+	delete errorHandler;
 }
 
 
@@ -71,6 +80,8 @@ void	Server::fillValues()
 			this->createLocation(i);
 		else if (this->words[i] == "Max_Body_Size")
 			this->setMaxBodySize(i);
+		else if (this->words[i] == "error")
+			this->addToErrorMap(i);
 	}
 }
 
@@ -163,11 +174,13 @@ void	Server::setMaxBodySize(size_t i)
 	}
 }
 
-/* void	Server::serverRun()
+void	Server::addToErrorMap(size_t i)
 {
-	listener->run();
+	if (words[i + 3] == ";")
+	{	
+		errorMap[words[i + 1]] = words[i + 2];
+	}
 }
-*/
 
 int	Server::start(EventManager *eventManager) {
 	listener->setEventManager(eventManager);
@@ -180,4 +193,8 @@ std::pair<int, int>	Server::event(epoll_event ev) {
 
 int Server::getSocketFd() {
 	return listener->getSocketFd();
+}
+
+Response Server::error(int error_code) {
+	return errorHandler->getError(error_code);
 }
