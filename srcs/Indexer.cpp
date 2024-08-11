@@ -15,7 +15,6 @@ Indexer::Indexer(std::string path)
     {
         while ((ent = readdir(dir)) != NULL)
         {
-			std::cerr << std::string(ent->d_name) << std::endl;
             if (ent->d_type == DT_DIR)
             {
                 this->html += "<li><a href=\"" + std::string(ent->d_name) + "/\">" + std::string(ent->d_name) + "/</a></li>\n";

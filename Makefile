@@ -18,6 +18,7 @@ SRC =	srcs/CgiHandler.cpp \
 		srcs/Client.cpp \
 		srcs/config_parser.cpp \
 		srcs/Controller.cpp \
+		srcs/Errors.cpp \
 		srcs/EventManager.cpp \
 		srcs/extraFunctions.cpp \
 		srcs/Indexer.cpp \

@@ -32,7 +32,7 @@ Response TCPListener::analizer(const Request &request)
 					}
 					if (flag == false)
 					{
-						return (Response(404, "404 Error\nWe tried, but couldn't find :(", true));
+						return (server->error(404));
 					}
 				}
 				/* std::cerr << "requested method: " << request.getMethod()
@@ -51,12 +51,12 @@ Response TCPListener::analizer(const Request &request)
 			}
 			else
 			{
-				return (Response(405, "405 Error\nThe requested method isn't allowed", true));
+				return (server->error(403));
 			}
 			break;
 		}
 	}
-	return (Response(404, "404 Error\nWe tried, but couldn't find :(", true));
+	return (server->error(404));
 }
 
 // GET method handler
@@ -76,7 +76,7 @@ Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location
 	}
 	else
 	{
-		return Response(500, "500 Error\nCould not open the requested file.", true);
+		return server->error(500);
 	}
 }
 
@@ -97,7 +97,7 @@ Response TCPListener::Head(std::pair<std::string, std::string> uri_pair, Locatio
 	}
 	else
 	{
-		return Response(500, "500 Error\nCould not open the requested file.", true);
+		return server->error(500);
 	}
 }
 
@@ -108,21 +108,17 @@ Response TCPListener::Delete(std::pair<std::string, std::string> uri_pair, Locat
 	if (remove(file_path.c_str()) == 0)
 		return Response(204, "", false);
 	else
-		return Response(500, "500 Error\nCould not open the requested file.", true);
+		return server->error(500);
 }
 
 // POST method handler
+//nginx returns 405 if posting to a static file (no cgi)
 Response TCPListener::Post(std::pair<std::string, std::string> uri_pair, Location &location, const Request &request)
 {
-	std::string file_path = location.getRoot() + "/" + uri_pair.second;
-	std::ofstream outfile;
-	std::cerr << "opening file " << file_path << std::endl;
-	outfile.open(file_path.c_str());
-	if (!outfile.is_open())
-		return Response(500, "500 Error\nCould not open the requested file.", true);
-	outfile << request.getBody();
-	outfile.close();
-	return Response(200, request.getBody(), true);
+	(void) uri_pair;
+	(void) location;
+	(void) request;
+	return server->error(405);
 }
 
 //event handler for sending information to cgi through its input fd

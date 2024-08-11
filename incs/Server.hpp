@@ -3,6 +3,8 @@
 #include "config_parser.hpp"
 #include "TCPListener.hpp"
 #include "EventManager.hpp"
+#include "Errors.hpp"
+#include "Response.hpp"
 
 class Location;
 
@@ -18,9 +20,11 @@ class Server {
 		std::vector<std::string>									words;
 		unsigned long												maxBodySize;
 		TCPListener													*listener;
-	//	std::vector<std::pair <std::string, std::string>>			cgi;
+		Errors														*errorHandler;
+		std::map<std::string, std::string>							errorMap;
 
 	public:
+		Server();
 		Server(std::string serverBlock);
 		~Server();
 		Server& operator=(const Server& copy);
@@ -36,8 +40,9 @@ class Server {
 		void		setListen(size_t i);
 		void		createLocation(size_t i);
 		void		setMaxBodySize(size_t i);
-		void		serverRun();
+		void		addToErrorMap(size_t i);
 		int			start(EventManager *eventManager);
 		int			getSocketFd();
 		std::pair<int, int>	event(epoll_event ev);
+		Response	error(int error_code);
 };
