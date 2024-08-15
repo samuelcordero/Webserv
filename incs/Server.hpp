@@ -40,6 +40,7 @@ class Server {
 		void		setListen(size_t i);
 		void		createLocation(size_t i);
 		void		setMaxBodySize(size_t i);
+		unsigned long getMaxBodySize();
 		void		addToErrorMap(size_t i);
 		int			start(EventManager *eventManager);
 		int			getSocketFd();
