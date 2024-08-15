@@ -94,3 +94,43 @@ std::string getMimeType(const std::string &filename)
     // If the extension is not recognized, return the default MIME type
     return "application/octet-stream";
 }
+
+static int hexToDecimal(char first, char second) {
+    int hexValue = 0;
+    
+    if (first >= '0' && first <= '9') {
+        hexValue += (first - '0') * 16;
+    } else if (first >= 'a' && first <= 'f') {
+        hexValue += (first - 'a' + 10) * 16;
+    } else if (first >= 'A' && first <= 'F') {
+        hexValue += (first - 'A' + 10) * 16;
+    }
+
+    if (second >= '0' && second <= '9') {
+        hexValue += (second - '0');
+    } else if (second >= 'a' && second <= 'f') {
+        hexValue += (second - 'a' + 10);
+    } else if (second >= 'A' && second <= 'F') {
+        hexValue += (second - 'A' + 10);
+    }
+
+    return hexValue;
+}
+
+
+std::string	urlDecoder(const std::string &url)
+{
+	std::string	ret;
+	for (size_t i = 0; i < url.size(); i++)
+	{
+		if(url[i] == '%' && std::isxdigit(url[i + 1]) && std::isxdigit(url[i + 2]))
+		{
+			int dec = hexToDecimal(url[i + 1], url[i + 2]);
+			ret += static_cast<char>(dec);
+			i += 2;
+		}
+		else
+			ret += url[i];
+	}
+	return (ret);
+}

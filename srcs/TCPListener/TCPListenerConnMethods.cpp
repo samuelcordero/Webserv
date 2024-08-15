@@ -5,7 +5,9 @@ Response TCPListener::analizer(const Request &request)
 {
 	std::vector<Location> &locations = this->server->getLocations();
 
-	std::pair<std::string, std::string> uri_pair = splitUri(request.getUri());
+	std::string decoded = urlDecoder(request.getUri());
+
+	std::pair<std::string, std::string> uri_pair = splitUri(decoded);
 
 	std::cerr << "Building response for resource " << uri_pair.second << " at location " << uri_pair.first << std::endl;
 	for (size_t i = 0; i < locations.size(); i++)

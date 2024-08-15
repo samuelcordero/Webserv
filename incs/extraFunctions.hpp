@@ -3,7 +3,10 @@
 
 #include <iostream>
 #include <string>
+#include <cctype>
 
 std::string getMimeType(const std::string &filename);
+std::string	urlDecoder(const std::string &url);
+
 
 #endif // EXTRA_FUNCTIONS_HPP

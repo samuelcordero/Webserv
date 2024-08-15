@@ -6,7 +6,7 @@
 /*   By: agserran <agserran@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/15 12:59:14 by sacorder          #+#    #+#             */
-/*   Updated: 2024/06/27 16:23:02 by agserran         ###   ########.fr       */
+/*   Updated: 2024/08/15 12:18:24 by agserran         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,7 @@
 # include "Client.hpp"
 # include "EventManager.hpp"
 # include "CgiHandler.hpp"
+# include "extraFunctions.hpp"
 
 # define MAX_EVENTS 128
 
