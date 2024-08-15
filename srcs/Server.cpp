@@ -198,3 +198,8 @@ int Server::getSocketFd() {
 Response Server::error(int error_code) {
 	return errorHandler->getError(error_code);
 }
+
+
+unsigned long Server::getMaxBodySize() {
+	return maxBodySize;
+}

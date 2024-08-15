@@ -29,8 +29,8 @@ std::pair<int, int> TCPListener::readData(int fd)
 	int bytesRead;
 	bytesRead = recv(fd, buffer, sizeof(buffer), 0);
 	//static int ctr;
-	std::cerr << "read (" << buffer << ")\n";
-	std::cerr << "Read " << bytesRead << " bytes\n";
+	//std::cerr << "read (" << buffer << ")\n";
+	//std::cerr << "Read " << bytesRead << " bytes\n";
 	if (bytesRead == -1)
 	{
 		perror("recv");
@@ -98,6 +98,11 @@ void TCPListener::disconnectClient(int fd) {
 std::pair<int, int> TCPListener::createResponse(size_t i) {
 	if (clients[i].requestReady())
 	{
+		std::cerr << "Request body len: " << clients[i].getRequest().getContentLen() << "; max body size: " << server->getMaxBodySize() << std::endl;
+		if (clients[i].getRequest().getContentLen() > server->getMaxBodySize()) {
+			clients[i].setResponse(server->error(413));
+			return std::pair<int, int>(0,0);
+		}
 		if (checkCgiRequest(i))
 			return createCgiHandler(i);
 		else

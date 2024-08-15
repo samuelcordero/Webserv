@@ -81,6 +81,9 @@ Response Errors::ourErrorResponse(int error_code) {
     case 409:
         message = "Conflict";
         break;
+	case 413:
+        message = "Request Entity Too Large";
+        break;
     default:
         final_code = 500;
         message = "Internal Server Error";
