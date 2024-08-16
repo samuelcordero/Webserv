@@ -134,3 +134,16 @@ std::string	urlDecoder(const std::string &url)
 	}
 	return (ret);
 }
+
+std::string getHost(const std::string& hostport) {
+    // Buscar el carácter ':' en el string
+    size_t posicion = hostport.find(':');
+    
+    // Si encuentra el carácter ':', devuelve la parte antes de él (el host)
+    if (posicion != std::string::npos) {
+        return hostport.substr(0, posicion);
+    }
+    
+    // Si no encuentra ':', se asume que todo el string es el host
+    return hostport;
+}

@@ -12,11 +12,12 @@
 
 #include "TCPListener.hpp"
 
-TCPListener::TCPListener(int port, Server *server) : port(port)
+TCPListener::TCPListener(int port) : port(port)
 {
-	this->server = server;
+	server_ctr = 0;
 	socket_fd = -1;
 	this->eventManager = NULL;
+	start();
 }
 
 //destructor
@@ -31,18 +32,19 @@ TCPListener &TCPListener::operator=(const TCPListener &copy)
 {
 	// std::cerr << "called equal op tcp listener\n";
 	this->port = copy.port;
-	this->server = copy.server;
+	for (int i = 0; i < copy.server_ctr; ++i)
+		servers[i] = copy.servers[i];
+	server_ctr = copy.server_ctr;
 	socket_fd = -1;
 	eventManager = copy.eventManager;
 	return (*this);
 }
 
 //copy cons
-TCPListener::TCPListener(const TCPListener &copy, Server *s) : server(copy.server)
+TCPListener::TCPListener(const TCPListener &copy)
 {
 	// std::cerr << "called copy cons tcp listener\n";
 	*this = copy;
-	server = s;
 }
 
 //starts the listener, cretes a socket and binds it to requeted port
@@ -78,7 +80,7 @@ int TCPListener::start()
 		perror("Listening failed");
 		exit(EXIT_FAILURE);
 	}
-	std::cout << "Server listening on port " << port << "...\n";
+	std::cout << "Listening on port " << port << "...\n";
 	// return socket to add to epoll
 	return socket_fd;
 }
@@ -110,9 +112,24 @@ std::pair<int, int> TCPListener::checkEvent(epoll_event ev) {
 	} else if (matcher[ev.data.fd] == CGI_READ) {
 		if (isTimeout(clients[cgi_handlers[ev.data.fd]->getClientFd()].getCgiStartTime(), getCurrentEpochMillis(), CGI_TIMEOUT)) {
 			std::cerr << "Cgi timeout met\n";
-			clients[cgi_handlers[ev.data.fd]->getClientFd()].setResponse(Response(500, "500 Error\nCouldn't generate cgi response", true));
+			Server *s = servers[0];
+			for (int j = 0; j < server_ctr; ++j) {
+				if (servers[j]->getName() == clients[cgi_handlers[ev.data.fd]->getClientFd()].getRequest().getHeaders()["Referer"]) {
+					s = servers[j];
+				}
+			}	
+			clients[cgi_handlers[ev.data.fd]->getClientFd()].setResponse(s->error(504)); //check which server from request, send error
 			killCGI(ev.data.fd);
 		}
 	}
 	return std::pair<int, int>(0, 0);
+}
+
+bool	TCPListener::attachServer(Server *s) {
+	if (server_ctr + 1 < MAX_SERVERS) {
+		servers[server_ctr++] = s;
+		return true;
+	}
+
+	return false;
 }

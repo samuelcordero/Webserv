@@ -30,9 +30,9 @@ bool TCPListener::isTimeout(long long startMillis, long long endMillis, int thre
 
 
 //checks if a request is a valid cgi requests
-bool	TCPListener::checkCgiRequest(int fd) {
+bool	TCPListener::checkCgiRequest(int fd, Server *s) {
 	Request r = clients[fd].getRequest();
-	std::vector<Location> &locations = this->server->getLocations();
+	std::vector<Location> &locations = s->getLocations();
 
 	std::pair<std::string, std::string> uri_pair = splitUri(r.getUri());
 	if (uri_pair.second == "")
@@ -64,9 +64,9 @@ bool	TCPListener::checkCgiRequest(int fd) {
 //for valid cgi requests only (see TCPListener::checkCgiRequest)
 //creates a cgi handler
 //returns a pair of fds, read(first) and write(second) for the forked process
-std::pair<int, int>	TCPListener::createCgiHandler(int fd) {
+std::pair<int, int>	TCPListener::createCgiHandler(int fd, Server *s) {
 	size_t	i = 0;
-	std::vector<Location> &locations = this->server->getLocations();
+	std::vector<Location> &locations = s->getLocations();
 	Request r = clients[fd].getRequest();
 
 	std::pair<std::string, std::string> uri_pair = splitUri(r.getUri());

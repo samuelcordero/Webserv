@@ -37,56 +37,62 @@ Response Errors::customErrorResponse(int error_code) {
 		std::string fileContent = buffer.str();
 		file.close();
 	
-		return Response(error_code, fileContent, true);
-	} else { // defaulting if error opening file
-		return ourErrorResponse(error_code);
+		return Response(error_code, fileContent, true, customErrors[error_code]);
 	}
+	// defaulting if error opening file
+	return ourErrorResponse(error_code);
 }
 
 Response Errors::ourErrorResponse(int error_code) {
 	int final_code = error_code;
-	std::string message;
+	std::string message = "Error " + _int_to_string(error_code) + "\n\r";
 	switch (error_code)
     {
     case 200:
-        message = "OK";
+        message += "OK";
         break;
     case 201:
-        message = "Created";
+        message += "Created";
         break;
     case 204:
-        message = "No Content";
+        message += "No Content";
         break;
     case 400:
-        message = "Bad Request";
+        message += "Bad Request";
         break;
     case 401:
-        message = "Unauthorized";
+        message += "Unauthorized";
         break;
     case 403:
-        message = "Forbidden";
+        message += "Forbidden";
         break;
     case 404:
-        message = "Not Found";
+        message += "Not Found";
         break;
     case 405:
-        message = "Method Not Allowed";
+        message += "Method Not Allowed";
         break;
     case 406:
-        message = "Not Acceptable";
+        message += "Not Acceptable";
         break;
     case 408:
-        message = "Request Timeout";
+        message += "Request Timeout";
         break;
     case 409:
-        message = "Conflict";
+        message += "Conflict";
         break;
 	case 413:
-        message = "Request Entity Too Large";
+        message += "Request Entity Too Large";
+        break;
+	case 500:
+		message += "Internal Server Error";
+        break;
+	case 504:
+		message += "Gateway Timeout";
         break;
     default:
         final_code = 500;
-        message = "Internal Server Error";
+        message += "Internal Server Error";
         break;
     }
 	return Response(final_code, message, true);

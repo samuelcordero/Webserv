@@ -31,7 +31,11 @@ SRC =	srcs/CgiHandler.cpp \
 		srcs/TCPListener/TCPListenerClientUtils.cpp \
 		srcs/TCPListener/TCPListenerConnMethods.cpp \
 		srcs/TCPListener/TCPListenerUtils.cpp 
-OBJ = $(SRC:.cpp=.o)
+
+
+OBJS_DIR = objs
+OBJ = $(patsubst srcs/%, $(OBJS_DIR)/%, $(SRC:.cpp=.o))
+
 TEST_SCRIPT = tests/test.py
 
 .PHONY: all clean fclean re start_server test
@@ -41,7 +45,8 @@ all: $(NAME)
 $(NAME): $(OBJ)
 	$(CC) -o $(NAME) $(OBJ) $(LDFLAGS)
 
-%.o: %.cpp
+$(OBJS_DIR)/%.o: srcs/%.cpp
+	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(LDFLAGS) -c -o $@ $<
 
 clean:

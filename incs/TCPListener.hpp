@@ -48,6 +48,8 @@
 # define CGI_WRITE 2
 # define CGI_READ 3
 
+# define MAX_SERVERS 128
+
 class Request;
 class Server;
 class Response;
@@ -58,8 +60,9 @@ class TCPListener {
 	private:
 		int							socket_fd;
 		int							port;
+		int							server_ctr;
 		struct sockaddr_in			server_addr;
-		Server						*server;
+		Server						*servers[MAX_SERVERS];
 		Client						clients[4096];
 		char						matcher[4096];
 		EventManager				*eventManager;
@@ -73,11 +76,11 @@ class TCPListener {
 		std::pair<int, int>	createResponse(size_t i);
 
 		//TCPListenerConnMethods.cpp
-		Response			analizer(const Request& request);
-		Response 			Get(std::pair<std::string, std::string> uri_pair, Location &location);
-		Response 			Head(std::pair<std::string, std::string> uri_pair, Location &location);
-		Response 			Delete(std::pair<std::string, std::string> uri_pair, Location &location);
-		Response 			Post(std::pair<std::string, std::string> uri_pair, Location &location, const Request &request);
+		Response			analizer(const Request& request, Server *s);
+		Response 			Get(std::pair<std::string, std::string> uri_pair, Location &location, Server *s);
+		Response 			Head(std::pair<std::string, std::string> uri_pair, Location &location, Server *s);
+		Response 			Delete(std::pair<std::string, std::string> uri_pair, Location &location, Server *s);
+		Response 			Post(std::pair<std::string, std::string> uri_pair, Location &location, Server *s, const Request &request);
 		std::pair<int, int>	Client2CGI(int fd);
 		std::pair<int, int>	CGI2Client(int fd);
 
@@ -86,19 +89,20 @@ class TCPListener {
 			std::string>	splitUri(std::string uri);
 		long long			getCurrentEpochMillis();
 		bool 				isTimeout(long long startMillis, long long endMillis, int thresholdSeconds);
-		bool				checkCgiRequest(int fd);
-		std::pair<int, int>	createCgiHandler(int fd);
+		bool				checkCgiRequest(int fd, Server *s);
+		std::pair<int, int>	createCgiHandler(int fd, Server *s);
 		void				killCGI(int fd);
 
 	public:
-		TCPListener(int port, Server *server);
+		TCPListener(int port);
 		~TCPListener();
-		TCPListener(const TCPListener& copy, Server *s);
+		TCPListener(const TCPListener& copy);
 		TCPListener& operator=(const TCPListener& copy);
 		int		start();
 		int		getSocketFd();
 		void	setEventManager(EventManager *eventManager);
 		std::pair<int, int>		checkEvent(epoll_event ev);
+		bool	attachServer(Server *s);
 		//void	run();
 };
 
