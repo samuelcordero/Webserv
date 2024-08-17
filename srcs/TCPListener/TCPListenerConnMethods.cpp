@@ -17,7 +17,7 @@ Response TCPListener::analizer(const Request &request, Server *s)
 			if ((locations[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
 				if (uri_pair.second == "" && locations[i].hasAutoIndex())
-					return (Response(200, locations[i].getAutoIndex(), true));
+					return (Response(200, locations[i].getAutoIndex(), true, true));
 				else if (uri_pair.second == "")
 					uri_pair.second = locations[i].getIndex().front();
 				else if (!locations[i].hasAutoIndex())
@@ -104,7 +104,7 @@ Response TCPListener::Head(std::pair<std::string, std::string> uri_pair, Locatio
 		buffer << file.rdbuf();
 		std::string file_contents = buffer.str();
 		file.close();
-		return Response(200, file_contents, false);
+		return Response(200, file_contents, false, true);
 	}
 	else
 	{
@@ -127,7 +127,7 @@ Response TCPListener::Delete(std::pair<std::string, std::string> uri_pair, Locat
 		return s->error(403);
 
 	if (remove(file_path.c_str()) == 0)
-		return Response(204, "", false);
+		return Response(204, "", false, false);
 	else
 		return s->error(500);
 }
@@ -164,6 +164,7 @@ std::pair<int, int>	TCPListener::Client2CGI(int fd) {
 
 	eventManager->removeFromMonitoring(cgi_stdin);
 	close(cgi_stdin);
+	cgi_handlers[fd]->handleRequest();
 	cgi_handlers[fd] = NULL;
 	return std::pair<int, int>(0, 0);
 }
@@ -183,10 +184,9 @@ std::pair<int, int>	TCPListener::CGI2Client(int fd) {
 		response_buffer.append(read_buffer, bytes_read);
 		std::cerr << "read " << bytes_read << " bytes from cgi\n";
 	}
-	clients[client_fd].setResponse(Response(200, response_buffer, true));
+	clients[client_fd].setResponse(Response(200, response_buffer, true, false));
 	eventManager->removeFromMonitoring(cgi_stdout);
 	close(cgi_stdout);
-	//maybe check kill (avoid zombie process)
 	clients[client_fd].setCGI(NULL);
 	cgi_handlers[fd] = NULL;
 	std::cerr << "cgi response ready\n";

@@ -95,5 +95,5 @@ Response Errors::ourErrorResponse(int error_code) {
         message += "Internal Server Error";
         break;
     }
-	return Response(final_code, message, true);
+	return Response(final_code, message, true, true);
 }

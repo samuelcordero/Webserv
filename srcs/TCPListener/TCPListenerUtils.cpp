@@ -80,7 +80,7 @@ std::pair<int, int>	TCPListener::createCgiHandler(int fd, Server *s) {
 	
 	std::cerr << "Building cgi response for resource " << uri_pair.second << " at location " << uri_pair.first << std::endl;
 
-	CGIHandler *handler = new CGIHandler(scriptPath, locations[i].getCgi().second, fd);
+	CGIHandler *handler = new CGIHandler(scriptPath, locations[i].getCgi().second, fd, clients[fd].getRequest());
 	clients[fd].setCGI(handler);
 	clients[fd].setCgiStartTime(getCurrentEpochMillis());
 	cgi_handlers[handler->getWriteEnd()] = handler;

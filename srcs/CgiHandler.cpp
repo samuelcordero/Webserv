@@ -6,10 +6,25 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
+#include <ext/stdio_filebuf.h>
 
-CGIHandler::CGIHandler(const std::string &scriptPath, const std::string &interpreter,int client_fd)
-    : scriptPath(scriptPath), interpreter(interpreter), client_fd(client_fd) {
-	handleRequest();
+CGIHandler::CGIHandler(const std::string &scriptPath, const std::string &interpreter, int client_fd, const Request &r)
+    : scriptPath(scriptPath), interpreter(interpreter), request(r), client_fd(client_fd) {
+	//create pipes
+	if (pipe(pipein) == -1)
+    {
+        std::cerr << "Failed to create pipe\n";
+        return;
+    }
+
+	if (pipe(pipeout) == -1)
+    {
+        std::cerr << "Failed to create pipe\n";
+		close(pipein[0]);
+        close(pipein[1]);
+        return;
+    }
+	//handleRequest();
 }
 
 CGIHandler::~CGIHandler() {}
@@ -41,17 +56,25 @@ void CGIHandler::readEnvironmentVariables()
 
 void CGIHandler::readPostData()
 {
+	requestMethod = request.getMethod();
+	queryString = request.getHeaders()["Query-String"];
+	contentType = request.getHeaders()["Content-Type"];
+	contentLength = request.getHeaders()["Content-Length"];
+	postData = request.getBody();
+	/* //here we should read from pipein[0]
+	__gnu_cxx::stdio_filebuf<char> filebuf( pipein[0], std::ios_base::in );
+    std::istream inputStream( &filebuf );
     if (requestMethod == "POST" && !contentLength.empty())
     {
         int len = std::atoi(contentLength.c_str());
         postData.resize(len);
-        std::cin.read(&postData[0], len);
-    }
+        inputStream.read(&postData[0], len);
+    } */
 }
 
 void CGIHandler::executeCGIScript()
 {
-    if (pipe(pipein) == -1)
+    /* if (pipe(pipein) == -1)
     {
         std::cerr << "Failed to create pipe\n";
         return;
@@ -63,7 +86,7 @@ void CGIHandler::executeCGIScript()
 		close(pipein[0]);
         close(pipein[1]);
         return;
-    }
+    } */
 
     pid = fork();
     if (pid == 0)
@@ -74,7 +97,7 @@ void CGIHandler::executeCGIScript()
         dup2(pipeout[1], STDERR_FILENO); // Redirect stderr to pipe
 		close(pipeout[1]);
 
-		close(pipein[1]);               // Close read end of pipe
+		close(pipein[1]);               // Close write end of pipe
         dup2(pipein[0], STDIN_FILENO); // Redirect stdin to pipe
 		close(pipein[0]);
 
