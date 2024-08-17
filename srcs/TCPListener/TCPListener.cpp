@@ -109,17 +109,20 @@ std::pair<int, int> TCPListener::checkEvent(epoll_event ev) {
 		return Client2CGI(ev.data.fd);
 	} else if (matcher[ev.data.fd] == CGI_READ && cgi_handlers[ev.data.fd]->executionDone()) {
 		return CGI2Client(ev.data.fd);
-	} else if (matcher[ev.data.fd] == CGI_READ) {
+	} else if (matcher[ev.data.fd] == CGI_READ && !cgi_handlers[ev.data.fd]->executionDone()) {
 		if (isTimeout(clients[cgi_handlers[ev.data.fd]->getClientFd()].getCgiStartTime(), getCurrentEpochMillis(), CGI_TIMEOUT)) {
-			std::cerr << "Cgi timeout met\n";
-			Server *s = servers[0];
-			for (int j = 0; j < server_ctr; ++j) {
-				if (servers[j]->getName() == clients[cgi_handlers[ev.data.fd]->getClientFd()].getRequest().getHeaders()["Referer"]) {
-					s = servers[j];
-				}
-			}	
-			clients[cgi_handlers[ev.data.fd]->getClientFd()].setResponse(s->error(504)); //check which server from request, send error
-			killCGI(ev.data.fd);
+			usleep(5000);
+			if (!cgi_handlers[ev.data.fd]->executionDone()) {
+				std::cerr << "Cgi timeout met\n";
+				Server *s = servers[0];
+				for (int j = 0; j < server_ctr; ++j) {
+					if (servers[j]->getName() == clients[cgi_handlers[ev.data.fd]->getClientFd()].getRequest().getHeaders()["Referer"]) {
+						s = servers[j];
+					}
+				}	
+				clients[cgi_handlers[ev.data.fd]->getClientFd()].setResponse(s->error(504)); //check which server from request, send error
+				killCGI(ev.data.fd);
+			}
 		}
 	}
 	return std::pair<int, int>(0, 0);

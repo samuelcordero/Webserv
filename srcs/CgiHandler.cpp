@@ -127,7 +127,7 @@ void CGIHandler::executeCGIScript()
 		if (!postData.empty())
 			env_strings.push_back("POST_DATA=" + postData);
 
-		// Ahora extraemos los punteros c_str() de las cadenas, garantizando que la memoria siga viva
+		// Here we extract the c_str() pointers from the strings, ensuring that the memory remains valid.
 		for (std::vector<std::string>::size_type i = 0; i < env_strings.size(); ++i) {
     		envp.push_back(const_cast<char*>(env_strings[i].c_str()));
 		}

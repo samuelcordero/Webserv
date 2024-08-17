@@ -23,7 +23,6 @@ class Client {
 		long long					cgi_start;
 	public:
 		Client();
-		//Client();
 		Client(const Client &other);
 		~Client();
 		Client				&operator=(const Client &other);
@@ -45,6 +44,8 @@ class Client {
 		CGIHandler			*getCGI();
 		void				setCgiStartTime(long long now);
 		long long			getCgiStartTime();
+		const char* data_ptr;
+		size_t data_left;
 };
 
 #endif

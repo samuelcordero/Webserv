@@ -144,35 +144,44 @@ Response TCPListener::Post(std::pair<std::string, std::string> uri_pair, Locatio
 
 //event handler for sending information to cgi through its input fd
 std::pair<int, int>	TCPListener::Client2CGI(int fd) {
-	std::cerr << "on client2cgi\n";
 	int client_fd = cgi_handlers[fd]->getClientFd();
 	int	cgi_stdin = cgi_handlers[fd]->getWriteEnd();
+	const size_t CHUNK_SIZE = 65536;
 
 	Request r = clients[client_fd].getRequest();
-	const char* data_ptr = r.getBody().c_str();
-	size_t data_left = r.getBody().size();
+	if (!clients[client_fd].data_ptr) {
+		std::cerr << "starting client2cgi\n";
+		clients[client_fd].data_ptr = r.getBody().c_str();
+		clients[client_fd].data_left = r.getBody().size();
+		cgi_handlers[fd]->handleRequest();
+	}
 
-	while (data_left > 0) {
-		ssize_t bytes_written = write(cgi_stdin, data_ptr, data_left);
+	if (clients[client_fd].data_left > 0) {
+		clients[client_fd].setLastConn(getCurrentEpochMillis());
+		ssize_t bytes_to_write = (clients[client_fd].data_left < CHUNK_SIZE) ? clients[client_fd].data_left : CHUNK_SIZE;
+        ssize_t bytes_written = write(cgi_stdin, clients[client_fd].data_ptr, bytes_to_write);
 		if (bytes_written < 0) {
 			perror("write");
 			return std::pair<int, int>(0, 0);
 		}
-		data_ptr += bytes_written;
-		data_left -= bytes_written;
+		clients[client_fd].data_ptr += bytes_written;
+		clients[client_fd].data_left -= bytes_written;
+		//std::cerr << "Wrote " << bytes_written << " bytes\n";
+		if (clients[client_fd].data_left > 0)
+			return std::pair<int, int>(0, 0);
 	}
 
 	eventManager->removeFromMonitoring(cgi_stdin);
 	close(cgi_stdin);
-	cgi_handlers[fd]->handleRequest();
 	cgi_handlers[fd] = NULL;
+	clients[client_fd].data_ptr = NULL;
 	return std::pair<int, int>(0, 0);
 }
 
 //event handler for reading information to cgi through its output fd
 //then creates a response and stores it in the client that made the original request
 std::pair<int, int>	TCPListener::CGI2Client(int fd) {
-	std::cerr << "on cgi2client\n";
+	//std::cerr << "on cgi2client\n";
 	std::string response_buffer;
 	char		read_buffer[4096];
 	size_t		bytes_read;
@@ -182,7 +191,7 @@ std::pair<int, int>	TCPListener::CGI2Client(int fd) {
 
 	while ((bytes_read = read(cgi_stdout, read_buffer, sizeof(read_buffer))) > 0) {
 		response_buffer.append(read_buffer, bytes_read);
-		std::cerr << "read " << bytes_read << " bytes from cgi\n";
+		//std::cerr << "read " << bytes_read << " bytes from cgi\n";
 	}
 	clients[client_fd].setResponse(Response(200, response_buffer, true, false));
 	eventManager->removeFromMonitoring(cgi_stdout);

@@ -46,7 +46,7 @@ std::pair<int, int> TCPListener::readData(int fd)
 		clients[fd].setLastConn(getCurrentEpochMillis());
 	if (bytesRead > 0) {
 		clients[fd].addToRequestBuffer(std::string(buffer, bytesRead));
-		std::cerr << clients[fd].getRequestBuffer() << std::endl;
+		//std::cerr << clients[fd].getRequestBuffer() << std::endl;
 		Request r = Request(clients[fd].getRequestBuffer());
 		if (r.getContentLen() != r.getBody().length()) // if body not complete, skip
 			return std::pair<int, int>(0,0);

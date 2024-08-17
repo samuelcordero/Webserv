@@ -8,6 +8,8 @@ Client::Client() {
 	request.first = NULL;
 	request.second = false;
 	cgi = NULL;
+	data_left = 0;
+	data_ptr = NULL;
 }
 
 Client::Client(const Client &other) {
@@ -22,6 +24,8 @@ Client::Client(const Client &other) {
 		request.first = new Request(*other.request.first);
 	request.second = other.request.second;
 	cgi = other.cgi;
+	data_left = other.data_left;
+	data_ptr = other.data_ptr;
 }
 
 Client::~Client() {
@@ -48,6 +52,8 @@ Client &Client::operator=(const Client &other) {
 			request.first = new Request(*other.request.first);
 		request.second = other.request.second;
 		cgi = other.cgi;
+		data_left = other.data_left;
+		data_ptr = other.data_ptr;
 	}
 	return (*this);
 }
