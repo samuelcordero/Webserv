@@ -25,7 +25,7 @@ Response::Response()
     body = "Hello world! This is test message!";
     message += "HTTP/1.1 " + _int_to_string(200) + " " + "OK" + "\r\n";
     message += "Date: " + get_current_date() + "\r\n";
-    message += "Server: CustomC++Server/1.0\r\n";
+    message += "Server: RealNjinx/0.1\r\n";
     message += "Content-Type: text/html; charset=UTF-8\r\n";
     message += "Content-Length: " + _int_to_string(body.length()) + "\r\n";
     message += "Connection: keep-alive\r\n";
@@ -33,7 +33,7 @@ Response::Response()
     message += body;
 }
 
-Response::Response(int status_code, const std::string &body, bool include_body)
+Response::Response(int status_code, const std::string &body, bool include_body, bool include_contType)
 {
 
     this->status_code = status_code;
@@ -81,11 +81,13 @@ Response::Response(int status_code, const std::string &body, bool include_body)
     }
     message += "HTTP/1.1 " + _int_to_string(status_code) + " " + status_message + "\r\n";
     message += "Date: " + get_current_date() + "\r\n";
-    message += "Server: CustomC++Server/1.0\r\n";
-    message += "Content-Type: text/html; charset=UTF-8\r\n";
+    message += "Server: RealNjinx/0.1\r\n";
     message += "Content-Length: " + _int_to_string(body.length()) + "\r\n";
     message += "Connection: keep-alive\r\n";
-    message += "\r\n";
+	if (include_contType) {
+		message += "Content-Type: text/html; charset=UTF-8\r\n";
+		message += "\r\n";
+	}
     if (include_body)
         message += body;
 }
@@ -138,7 +140,7 @@ Response::Response(int status_code, const std::string &body, bool include_body, 
     }
     message += "HTTP/1.1 " + _int_to_string(status_code) + " " + status_message + "\r\n";
     message += "Date: " + get_current_date() + "\r\n";
-    message += "Server: CustomC++Server/1.0\r\n";
+    message += "Server: RealNjinx/0.1\r\n";
     message += "Content-Type: " + getMimeType(filename) + "; charset=UTF-8\r\n";
     message += "Content-Length: " + _int_to_string(body.length()) + "\r\n";
     message += "Connection: keep-alive\r\n";

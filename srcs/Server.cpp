@@ -1,7 +1,6 @@
 #include "Server.hpp"
 
 Server::Server() {
-	listener = NULL;
 	errorHandler = NULL;
 }
 
@@ -12,7 +11,6 @@ Server::Server(std::string serverBlock)
 	this->maxBodySize = 1000000;
 	this->splitBlock();
 	this->fillValues();
-	listener = new TCPListener(port, this);
 	errorHandler = new Errors(errorMap);
 }
 
@@ -28,8 +26,6 @@ Server& Server::operator=(const Server& copy)
 	this->block = copy.block;
 	this->words = copy.words;
 	this->maxBodySize = copy.maxBodySize;
-	this->listener = new TCPListener(*copy.listener, this);
-	//delete errorHandler;
 	errorMap = copy.errorMap;
 	this->errorHandler = new Errors(copy.errorMap);
 	return (*this);
@@ -42,7 +38,6 @@ Server::Server(const Server& copy)
 }
 
 Server::~Server() {
-	delete listener;
 	delete errorHandler;
 }
 
@@ -182,7 +177,7 @@ void	Server::addToErrorMap(size_t i)
 	}
 }
 
-int	Server::start(EventManager *eventManager) {
+/* int	Server::start(EventManager *eventManager) {
 	listener->setEventManager(eventManager);
 	return listener->start();
 }
@@ -193,7 +188,7 @@ std::pair<int, int>	Server::event(epoll_event ev) {
 
 int Server::getSocketFd() {
 	return listener->getSocketFd();
-}
+} */
 
 Response Server::error(int error_code) {
 	return errorHandler->getError(error_code);
@@ -202,4 +197,12 @@ Response Server::error(int error_code) {
 
 unsigned long Server::getMaxBodySize() {
 	return maxBodySize;
+}
+
+int Server::getPort() {
+	return port;
+}
+
+std::string Server::getName() {
+	return name;
 }

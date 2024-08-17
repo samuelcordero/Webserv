@@ -3,12 +3,14 @@
 # include "EventManager.hpp"
 # include "config_parser.hpp"
 # include "Server.hpp"
+# include "TCPListener.hpp"
 
 class Controller {
 	private:
 		EventManager				event_manager;
 		std::vector<Server>			servers;
-		Server						*matcher[4096];
+		std::map<int, TCPListener*>	listeners;
+		TCPListener					*listener_matcher[4096];
 
 		std::pair<size_t, std::vector<epoll_event> *>	events;
 		void	solveEvent(epoll_event ev);

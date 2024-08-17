@@ -46,6 +46,7 @@ std::pair<int, int> TCPListener::readData(int fd)
 		clients[fd].setLastConn(getCurrentEpochMillis());
 	if (bytesRead > 0) {
 		clients[fd].addToRequestBuffer(std::string(buffer, bytesRead));
+		//std::cerr << clients[fd].getRequestBuffer() << std::endl;
 		Request r = Request(clients[fd].getRequestBuffer());
 		if (r.getContentLen() != r.getBody().length()) // if body not complete, skip
 			return std::pair<int, int>(0,0);
@@ -98,15 +99,23 @@ void TCPListener::disconnectClient(int fd) {
 std::pair<int, int> TCPListener::createResponse(size_t i) {
 	if (clients[i].requestReady())
 	{
-		std::cerr << "Request body len: " << clients[i].getRequest().getContentLen() << "; max body size: " << server->getMaxBodySize() << std::endl;
-		if (clients[i].getRequest().getContentLen() > server->getMaxBodySize()) {
-			clients[i].setResponse(server->error(413));
+		//here we should check which server is based on request referer
+		//server defaults to first
+		Server *s = servers[0];
+		for (int j = 0; j < server_ctr; ++j) {
+			if (servers[j]->getName() == getHost(clients[i].getRequest().getHeaders()["Host"])) {
+				s = servers[j];
+			}
+		}
+		std::cerr << "Request body len: " << clients[i].getRequest().getContentLen() << "; max body size: " << s->getMaxBodySize() << std::endl;
+		if (clients[i].getRequest().getContentLen() > s->getMaxBodySize()) {
+			clients[i].setResponse(s->error(413));
 			return std::pair<int, int>(0,0);
 		}
-		if (checkCgiRequest(i))
-			return createCgiHandler(i);
+		if (checkCgiRequest(i, s))
+			return createCgiHandler(i, s);
 		else
-			clients[i].setResponse(analizer(clients[i].getRequest()));
+			clients[i].setResponse(analizer(clients[i].getRequest(), s));
 	}
 	return std::pair<int, int>(0,0);
 }

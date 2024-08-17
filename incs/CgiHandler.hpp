@@ -3,11 +3,14 @@
 
 #include <string>
 #include <sys/types.h>
+#include <fstream>
+
+#include "Request.hpp"
 
 class CGIHandler
 {
 public:
-    CGIHandler(const std::string &scriptPath, const std::string &interpreter, int client_fd);
+    CGIHandler(const std::string &scriptPath, const std::string &interpreter, int client_fd, const Request &r);
     ~CGIHandler();
 	void handleRequest();
     std::string getOutputData();
@@ -24,6 +27,7 @@ private:
 	std::string interpreter;
     int pipein[2];
 	int pipeout[2];
+	const Request 	&request;
 	int	client_fd;
 	pid_t pid;
 

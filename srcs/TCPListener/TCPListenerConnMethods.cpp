@@ -1,9 +1,9 @@
 #include "TCPListener.hpp"
 
 //calls the GET, POST or HEAD method requested, and returns the response
-Response TCPListener::analizer(const Request &request)
+Response TCPListener::analizer(const Request &request, Server *s)
 {
-	std::vector<Location> &locations = this->server->getLocations();
+	std::vector<Location> &locations = s->getLocations();
 
 	std::string decoded = urlDecoder(request.getUri());
 
@@ -17,7 +17,7 @@ Response TCPListener::analizer(const Request &request)
 			if ((locations[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
 				if (uri_pair.second == "" && locations[i].hasAutoIndex())
-					return (Response(200, locations[i].getAutoIndex(), true));
+					return (Response(200, locations[i].getAutoIndex(), true, true));
 				else if (uri_pair.second == "")
 					uri_pair.second = locations[i].getIndex().front();
 				else if (!locations[i].hasAutoIndex())
@@ -34,7 +34,7 @@ Response TCPListener::analizer(const Request &request)
 					}
 					if (flag == false)
 					{
-						return (server->error(404));
+						return (s->error(404));
 					}
 				}
 				/* std::cerr << "requested method: " << request.getMethod()
@@ -43,29 +43,33 @@ Response TCPListener::analizer(const Request &request)
 				std::cerr << "location method " << locations[i].getMethods() << std::endl; */
 
 				if (request.getNumMethod() == 1)
-					return (Post(uri_pair, locations[i], request));
+					return (Post(uri_pair, locations[i], s, request));
 				if (request.getNumMethod() == 2 && request.getMethod() == "GET")
-					return (Get(uri_pair, locations[i]));
+					return (Get(uri_pair, locations[i], s));
 				if (request.getNumMethod() == 2 && request.getMethod() == "HEAD")
-					return (Head(uri_pair, locations[i]));
+					return (Head(uri_pair, locations[i], s));
 				if (request.getNumMethod() == 4)
-					return (Delete(uri_pair, locations[i]));
+					return (Delete(uri_pair, locations[i], s));
 			}
 			else
 			{
-				return (server->error(403));
+				return (s->error(403));
 			}
 			break;
 		}
 	}
-	return (server->error(404));
+	return (s->error(404));
 }
 
 // GET method handler
-Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location &location)
+Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location &location, Server *s)
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
-	//std::cerr << "opening file " << file_path << std::endl;
+	
+	if (access(file_path.c_str(), F_OK))
+		return s->error(404);
+	if (access(file_path.c_str(), R_OK))
+		return s->error(403);
 	std::ifstream file(file_path.c_str());
 
 	if (file.is_open())
@@ -78,14 +82,19 @@ Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location
 	}
 	else
 	{
-		return server->error(500);
+		return s->error(500);
 	}
 }
 
 // HEAD method handler
-Response TCPListener::Head(std::pair<std::string, std::string> uri_pair, Location &location)
+Response TCPListener::Head(std::pair<std::string, std::string> uri_pair, Location &location, Server *s)
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
+
+	if (access(file_path.c_str(), F_OK))
+		return s->error(404);
+	if (access(file_path.c_str(), R_OK))
+		return s->error(403);
 	//std::cerr << "opening file " << file_path << std::endl;
 	std::ifstream file(file_path.c_str());
 
@@ -95,64 +104,84 @@ Response TCPListener::Head(std::pair<std::string, std::string> uri_pair, Locatio
 		buffer << file.rdbuf();
 		std::string file_contents = buffer.str();
 		file.close();
-		return Response(200, file_contents, false);
+		return Response(200, file_contents, false, true);
 	}
 	else
 	{
-		return server->error(500);
+		return s->error(500);
 	}
 }
 
 // DELETE method handler
-Response TCPListener::Delete(std::pair<std::string, std::string> uri_pair, Location &location)
+Response TCPListener::Delete(std::pair<std::string, std::string> uri_pair, Location &location, Server *s)
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
+
+	std::string directory = file_path.substr(0, file_path.find_last_of('/'));
+	if (access(directory.c_str(), W_OK) != 0)
+		return s->error(403);
+
+	if (access(file_path.c_str(), F_OK))
+		return s->error(404);
+	if (access(file_path.c_str(), R_OK) || access(file_path.c_str(), W_OK))
+		return s->error(403);
+
 	if (remove(file_path.c_str()) == 0)
-		return Response(204, "", false);
+		return Response(204, "", false, false);
 	else
-		return server->error(500);
+		return s->error(500);
 }
 
 // POST method handler
 //nginx returns 405 if posting to a static file (no cgi)
-Response TCPListener::Post(std::pair<std::string, std::string> uri_pair, Location &location, const Request &request)
+Response TCPListener::Post(std::pair<std::string, std::string> uri_pair, Location &location, Server *s, const Request &request)
 {
 	(void) uri_pair;
 	(void) location;
 	(void) request;
-	return server->error(405);
+	return s->error(405);
 }
 
 //event handler for sending information to cgi through its input fd
 std::pair<int, int>	TCPListener::Client2CGI(int fd) {
-	std::cerr << "on client2cgi\n";
 	int client_fd = cgi_handlers[fd]->getClientFd();
 	int	cgi_stdin = cgi_handlers[fd]->getWriteEnd();
+	const size_t CHUNK_SIZE = 65536;
 
 	Request r = clients[client_fd].getRequest();
-	const char* data_ptr = r.getBody().c_str();
-	size_t data_left = r.getBody().size();
+	if (!clients[client_fd].data_ptr) {
+		std::cerr << "starting client2cgi\n";
+		clients[client_fd].data_ptr = r.getBody().c_str();
+		clients[client_fd].data_left = r.getBody().size();
+		cgi_handlers[fd]->handleRequest();
+	}
 
-	while (data_left > 0) {
-		ssize_t bytes_written = write(cgi_stdin, data_ptr, data_left);
+	if (clients[client_fd].data_left > 0) {
+		clients[client_fd].setLastConn(getCurrentEpochMillis());
+		ssize_t bytes_to_write = (clients[client_fd].data_left < CHUNK_SIZE) ? clients[client_fd].data_left : CHUNK_SIZE;
+        ssize_t bytes_written = write(cgi_stdin, clients[client_fd].data_ptr, bytes_to_write);
 		if (bytes_written < 0) {
 			perror("write");
 			return std::pair<int, int>(0, 0);
 		}
-		data_ptr += bytes_written;
-		data_left -= bytes_written;
+		clients[client_fd].data_ptr += bytes_written;
+		clients[client_fd].data_left -= bytes_written;
+		//std::cerr << "Wrote " << bytes_written << " bytes\n";
+		if (clients[client_fd].data_left > 0)
+			return std::pair<int, int>(0, 0);
 	}
 
 	eventManager->removeFromMonitoring(cgi_stdin);
 	close(cgi_stdin);
 	cgi_handlers[fd] = NULL;
+	clients[client_fd].data_ptr = NULL;
 	return std::pair<int, int>(0, 0);
 }
 
 //event handler for reading information to cgi through its output fd
 //then creates a response and stores it in the client that made the original request
 std::pair<int, int>	TCPListener::CGI2Client(int fd) {
-	std::cerr << "on cgi2client\n";
+	//std::cerr << "on cgi2client\n";
 	std::string response_buffer;
 	char		read_buffer[4096];
 	size_t		bytes_read;
@@ -162,12 +191,11 @@ std::pair<int, int>	TCPListener::CGI2Client(int fd) {
 
 	while ((bytes_read = read(cgi_stdout, read_buffer, sizeof(read_buffer))) > 0) {
 		response_buffer.append(read_buffer, bytes_read);
-		std::cerr << "read " << bytes_read << " bytes from cgi\n";
+		//std::cerr << "read " << bytes_read << " bytes from cgi\n";
 	}
-	clients[client_fd].setResponse(Response(200, response_buffer, true));
+	clients[client_fd].setResponse(Response(200, response_buffer, true, false));
 	eventManager->removeFromMonitoring(cgi_stdout);
 	close(cgi_stdout);
-	//maybe check kill (avoid zombie process)
 	clients[client_fd].setCGI(NULL);
 	cgi_handlers[fd] = NULL;
 	std::cerr << "cgi response ready\n";

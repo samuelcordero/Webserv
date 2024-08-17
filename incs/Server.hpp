@@ -19,7 +19,6 @@ class Server {
 		std::string													block;
 		std::vector<std::string>									words;
 		unsigned long												maxBodySize;
-		TCPListener													*listener;
 		Errors														*errorHandler;
 		std::map<std::string, std::string>							errorMap;
 

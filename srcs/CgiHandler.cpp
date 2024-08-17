@@ -6,10 +6,25 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
+#include <ext/stdio_filebuf.h>
 
-CGIHandler::CGIHandler(const std::string &scriptPath, const std::string &interpreter,int client_fd)
-    : scriptPath(scriptPath), interpreter(interpreter), client_fd(client_fd) {
-	handleRequest();
+CGIHandler::CGIHandler(const std::string &scriptPath, const std::string &interpreter, int client_fd, const Request &r)
+    : scriptPath(scriptPath), interpreter(interpreter), request(r), client_fd(client_fd) {
+	//create pipes
+	if (pipe(pipein) == -1)
+    {
+        std::cerr << "Failed to create pipe\n";
+        return;
+    }
+
+	if (pipe(pipeout) == -1)
+    {
+        std::cerr << "Failed to create pipe\n";
+		close(pipein[0]);
+        close(pipein[1]);
+        return;
+    }
+	//handleRequest();
 }
 
 CGIHandler::~CGIHandler() {}
@@ -41,17 +56,25 @@ void CGIHandler::readEnvironmentVariables()
 
 void CGIHandler::readPostData()
 {
+	requestMethod = request.getMethod();
+	queryString = request.getHeaders()["Query-String"];
+	contentType = request.getHeaders()["Content-Type"];
+	contentLength = request.getHeaders()["Content-Length"];
+	postData = request.getBody();
+	/* //here we should read from pipein[0]
+	__gnu_cxx::stdio_filebuf<char> filebuf( pipein[0], std::ios_base::in );
+    std::istream inputStream( &filebuf );
     if (requestMethod == "POST" && !contentLength.empty())
     {
         int len = std::atoi(contentLength.c_str());
         postData.resize(len);
-        std::cin.read(&postData[0], len);
-    }
+        inputStream.read(&postData[0], len);
+    } */
 }
 
 void CGIHandler::executeCGIScript()
 {
-    if (pipe(pipein) == -1)
+    /* if (pipe(pipein) == -1)
     {
         std::cerr << "Failed to create pipe\n";
         return;
@@ -63,7 +86,7 @@ void CGIHandler::executeCGIScript()
 		close(pipein[0]);
         close(pipein[1]);
         return;
-    }
+    } */
 
     pid = fork();
     if (pid == 0)
@@ -74,7 +97,7 @@ void CGIHandler::executeCGIScript()
         dup2(pipeout[1], STDERR_FILENO); // Redirect stderr to pipe
 		close(pipeout[1]);
 
-		close(pipein[1]);               // Close read end of pipe
+		close(pipein[1]);               // Close write end of pipe
         dup2(pipein[0], STDIN_FILENO); // Redirect stdin to pipe
 		close(pipein[0]);
 
@@ -90,18 +113,26 @@ void CGIHandler::executeCGIScript()
 			std::cout << argv[i] << std::endl; */
 
         // Prepare environment variables for execve
-        std::vector<char *> envp;
-        if (!requestMethod.empty())
-            envp.push_back(const_cast<char *>(("REQUEST_METHOD=" + requestMethod).c_str()));
-        if (!queryString.empty())
-            envp.push_back(const_cast<char *>(("QUERY_STRING=" + queryString).c_str()));
-        if (!contentType.empty())
-            envp.push_back(const_cast<char *>(("CONTENT_TYPE=" + contentType).c_str()));
-        if (!contentLength.empty())
-            envp.push_back(const_cast<char *>(("CONTENT_LENGTH=" + contentLength).c_str()));
-        if (!postData.empty())
-            envp.push_back(const_cast<char *>(("POST_DATA=" + postData).c_str()));
-        envp.push_back(NULL); // The last element of envp must be NULL
+        std::vector<std::string> env_strings;
+		std::vector<char *> envp;
+
+		if (!requestMethod.empty())
+			env_strings.push_back("REQUEST_METHOD=" + requestMethod);
+		if (!queryString.empty())
+			env_strings.push_back("QUERY_STRING=" + queryString);
+		if (!contentType.empty())
+			env_strings.push_back("CONTENT_TYPE=" + contentType);
+		if (!contentLength.empty())
+			env_strings.push_back("CONTENT_LENGTH=" + contentLength);
+		if (!postData.empty())
+			env_strings.push_back("POST_DATA=" + postData);
+
+		// Here we extract the c_str() pointers from the strings, ensuring that the memory remains valid.
+		for (std::vector<std::string>::size_type i = 0; i < env_strings.size(); ++i) {
+    		envp.push_back(const_cast<char*>(env_strings[i].c_str()));
+		}
+
+		envp.push_back(NULL); // The last element of envp must be NULL
 
         execve(interpreter.c_str(), argv.data(), envp.data());
 
