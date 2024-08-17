@@ -113,18 +113,26 @@ void CGIHandler::executeCGIScript()
 			std::cout << argv[i] << std::endl; */
 
         // Prepare environment variables for execve
-        std::vector<char *> envp;
-        if (!requestMethod.empty())
-            envp.push_back(const_cast<char *>(("REQUEST_METHOD=" + requestMethod).c_str()));
-        if (!queryString.empty())
-            envp.push_back(const_cast<char *>(("QUERY_STRING=" + queryString).c_str()));
-        if (!contentType.empty())
-            envp.push_back(const_cast<char *>(("CONTENT_TYPE=" + contentType).c_str()));
-        if (!contentLength.empty())
-            envp.push_back(const_cast<char *>(("CONTENT_LENGTH=" + contentLength).c_str()));
-        if (!postData.empty())
-            envp.push_back(const_cast<char *>(("POST_DATA=" + postData).c_str()));
-        envp.push_back(NULL); // The last element of envp must be NULL
+        std::vector<std::string> env_strings;
+		std::vector<char *> envp;
+
+		if (!requestMethod.empty())
+			env_strings.push_back("REQUEST_METHOD=" + requestMethod);
+		if (!queryString.empty())
+			env_strings.push_back("QUERY_STRING=" + queryString);
+		if (!contentType.empty())
+			env_strings.push_back("CONTENT_TYPE=" + contentType);
+		if (!contentLength.empty())
+			env_strings.push_back("CONTENT_LENGTH=" + contentLength);
+		if (!postData.empty())
+			env_strings.push_back("POST_DATA=" + postData);
+
+		// Ahora extraemos los punteros c_str() de las cadenas, garantizando que la memoria siga viva
+		for (std::vector<std::string>::size_type i = 0; i < env_strings.size(); ++i) {
+    		envp.push_back(const_cast<char*>(env_strings[i].c_str()));
+		}
+
+		envp.push_back(NULL); // The last element of envp must be NULL
 
         execve(interpreter.c_str(), argv.data(), envp.data());
 
