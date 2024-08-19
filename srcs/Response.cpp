@@ -82,11 +82,16 @@ Response::Response(int status_code, const std::string &body, bool include_body, 
     message += "HTTP/1.1 " + _int_to_string(status_code) + " " + status_message + "\r\n";
     message += "Date: " + get_current_date() + "\r\n";
     message += "Server: RealNjinx/0.1\r\n";
-    message += "Content-Length: " + _int_to_string(body.length()) + "\r\n";
     message += "Connection: keep-alive\r\n";
 	if (include_contType) {
+    	message += "Content-Length: " + _int_to_string(body.length()) + "\r\n";
 		message += "Content-Type: text/html; charset=UTF-8\r\n";
 		message += "\r\n";
+	} else {
+		size_t content_type_end = body.find("\r\n\r\n") + 4;
+		//std::cerr << "Content type end: " << content_type_end << std::endl;
+		
+		message += "Content-Length: " + _int_to_string(body.length() - content_type_end) + "\r\n";
 	}
     if (include_body)
         message += body;

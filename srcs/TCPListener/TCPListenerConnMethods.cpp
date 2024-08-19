@@ -170,7 +170,7 @@ std::pair<int, int>	TCPListener::Client2CGI(int fd) {
 		if (clients[client_fd].data_left > 0)
 			return std::pair<int, int>(0, 0);
 	}
-
+	std::cerr << "End of client2cgi\n";
 	eventManager->removeFromMonitoring(cgi_stdin);
 	close(cgi_stdin);
 	cgi_handlers[fd] = NULL;

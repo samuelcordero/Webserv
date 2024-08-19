@@ -25,7 +25,7 @@ def main():
     form = cgi.FieldStorage()
     
     # Establece la cabecera de la respuesta
-    print("Content-Type: text/html\n")
+    print("Content-Type: text/html\r\n\r\n")
 
     # Si hay un archivo en la solicitud
     if "file" in form:
