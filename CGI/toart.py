@@ -10,7 +10,7 @@ from art import *
 cgitb.enable()
 
 # Print the HTTP header
-print("Content-Type: text/html\n")
+print("Content-Type: text/html\r\n\r\n")
 
 # Initialize input_data
 input_data = ""

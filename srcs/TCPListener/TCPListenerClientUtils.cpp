@@ -73,6 +73,7 @@ std::pair<int, int> TCPListener::sendData(int fd) {
 	} else
 		clients[fd].setLastConn(getCurrentEpochMillis());
 	clients[fd].clearRequest();
+	std::cerr << "Response sent to client with fd " << fd << std::endl;
 	return std::pair<int, int>(0,0);
 }
 
