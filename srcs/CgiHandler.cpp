@@ -24,7 +24,6 @@ CGIHandler::CGIHandler(const std::string &scriptPath, const std::string &interpr
         close(pipein[1]);
         return;
     }
-	//handleRequest();
 }
 
 CGIHandler::~CGIHandler() {}
@@ -57,7 +56,7 @@ void CGIHandler::readEnvironmentVariables()
 void CGIHandler::readPostData()
 {
 	requestMethod = request.getMethod();
-	queryString = request.getHeaders()["Query-String"];
+	queryString = extractQueryStr(request.getUri());
 	contentType = request.getHeaders()["Content-Type"];
 	contentLength = request.getHeaders()["Content-Length"];
 	postData = request.getBody();
@@ -239,4 +238,12 @@ int CGIHandler::getClientFd()
 
 bool	CGIHandler::executionDone() {
 	return waitForChildProcess();
+}
+
+std::string CGIHandler::extractQueryStr(const std::string& url) {
+    std::string::size_type pos = url.find('?');
+    if (pos != std::string::npos) {
+        return url.substr(pos + 1);
+    }
+    return "";
 }

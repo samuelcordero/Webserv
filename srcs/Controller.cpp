@@ -23,15 +23,17 @@ void	Controller::solveEvent(epoll_event ev) {
 	TCPListener *listener = listener_matcher[ev.data.fd];
 	std::pair<int, int> fd_pair = listener->checkEvent(ev);
 
-	if (fd_pair.first > 0) {
+	if (fd_pair.first != 0) {
 		if (fd_pair.second == 0) { //if new client
 			listener_matcher[fd_pair.first] = listener;
 			event_manager.addToMonitoring(fd_pair.first, EPOLLIN | EPOLLOUT);
 		} else { //else cgi
-			listener_matcher[fd_pair.first] = listener;
-			event_manager.addToMonitoring(fd_pair.first, EPOLLIN);
+			if (fd_pair.first > 0) {
+				listener_matcher[fd_pair.first] = listener;
+				event_manager.addToMonitoring(fd_pair.first, EPOLLOUT);
+			}
 			listener_matcher[fd_pair.second] = listener;
-			event_manager.addToMonitoring(fd_pair.second, EPOLLOUT);
+			event_manager.addToMonitoring(fd_pair.second, EPOLLIN);
 		}
 	}
 }
