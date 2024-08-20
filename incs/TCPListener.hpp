@@ -42,7 +42,7 @@
 # define MAX_EVENTS 128
 
 # define CONN_TIMEOUT 15 //timeout for connections in seconds
-# define CGI_TIMEOUT 10 //timeout for CGI in seconds
+# define CGI_TIMEOUT 7 //timeout for CGI in seconds
 
 # define CLIENT 1
 # define CGI_WRITE 2
