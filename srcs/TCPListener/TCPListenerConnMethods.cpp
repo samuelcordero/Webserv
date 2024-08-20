@@ -106,7 +106,7 @@ Response TCPListener::Head(std::pair<std::string, std::string> uri_pair, Locatio
 		buffer << file.rdbuf();
 		std::string file_contents = buffer.str();
 		file.close();
-		return Response(200, file_contents, false, true);
+		return Response(200, file_contents, false, file_path);
 	}
 	else
 	{
