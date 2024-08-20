@@ -16,6 +16,8 @@ Response TCPListener::analizer(const Request &request, Server *s)
 		{
 			if ((locations[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
+				if (locations[i].getRedirect().first > 300 && locations[i].getRedirect().first < 308) 
+					return (Response(locations[i].getRedirect().first, locations[i].getRedirect().second, ""));
 				if (uri_pair.second == "" && locations[i].hasAutoIndex())
 					return (Response(200, locations[i].getAutoIndex(), true, true));
 				else if (uri_pair.second == "")

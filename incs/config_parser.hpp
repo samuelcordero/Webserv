@@ -37,6 +37,7 @@ const	std::string keywords[] = {
 	"Max_Body_Size",
 	"autoindex",
 	"error",
+	"redirect",
 };
 
 class Parser{

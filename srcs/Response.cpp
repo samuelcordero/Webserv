@@ -33,6 +33,45 @@ Response::Response()
     message += body;
 }
 
+//only for redirects!
+Response::Response(int redirectCode, const std::string &location, const std::string &body)
+{
+	switch (redirectCode)
+    {
+    case 300:
+        this->status_message = "Multiple Choices";
+        break;
+    case 301:
+        this->status_message = "Moved Permanently";
+        break;
+    case 302:
+        this->status_message = "Found";
+        break;
+    case 303:
+        this->status_message = "See Other";
+        break;
+    case 305:
+        this->status_message = "Use Proxy";
+        break;
+    case 306:
+        this->status_message = "(Unused)";
+        break;
+	case 307:
+        this->status_message = "Temporary Redirect";
+        break;
+    }
+    message += "HTTP/1.1 " + _int_to_string(redirectCode) + " " + status_message + "\r\n";
+    message += "Date: " + get_current_date() + "\r\n";
+    message += "Server: RealNjinx/0.1\r\n";
+    message += "Content-Type: text/html; charset=UTF-8\r\n";
+    message += "Content-Length: " + _int_to_string(body.length()) + "\r\n";
+    message += "Connection: keep-alive\r\n";
+	message += "Location: " + location + "\r\n";
+    message += "\r\n";
+	message += body;
+}
+
+
 Response::Response(int status_code, const std::string &body, bool include_body, bool include_contType)
 {
 

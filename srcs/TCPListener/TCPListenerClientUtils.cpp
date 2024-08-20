@@ -46,7 +46,6 @@ std::pair<int, int> TCPListener::readData(int fd)
 		clients[fd].setLastConn(getCurrentEpochMillis());
 	if (bytesRead > 0) {
 		clients[fd].addToRequestBuffer(std::string(buffer, bytesRead));
-		//std::cerr << clients[fd].getRequestBuffer() << std::endl;
 		Request r = Request(clients[fd].getRequestBuffer());
 		if (r.getContentLen() != r.getBody().length()) // if body not complete, skip
 			return std::pair<int, int>(0,0);
@@ -100,7 +99,6 @@ void TCPListener::disconnectClient(int fd) {
 std::pair<int, int> TCPListener::createResponse(size_t i) {
 	if (clients[i].requestReady())
 	{
-		//here we should check which server is based on request referer
 		//server defaults to first
 		Server *s = servers[0];
 		for (int j = 0; j < server_ctr; ++j) {
