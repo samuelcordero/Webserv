@@ -42,6 +42,8 @@ private:
     void executeCGIScript();
     void setCGIEnvironment();
     bool waitForChildProcess();
+
+	std::string extractQueryStr(const std::string& url);
 };
 
 #endif // CGI_HANDLER_HPP

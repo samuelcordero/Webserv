@@ -4,6 +4,8 @@ Location::Location(std::vector<std::string> locationBlock)
 {
 	flagsMethods = 0;
 	autoindex = false;
+	redirect.first = 0;
+	redirect.second = "";
 	for (size_t i = 0; i < locationBlock.size(); i++)
 	{
 		if (locationBlock[i][0] == '/')
@@ -18,6 +20,8 @@ Location::Location(std::vector<std::string> locationBlock)
 			i = this->setRoot(i + 1, locationBlock);
 		else if (locationBlock[i] == "autoindex")
 			i = this->setAutoIndex(i + 1, locationBlock);
+		else if (locationBlock[i] == "redirect")
+			i = this->setRedirect(i + 1, locationBlock);
 	}
 	if (this->uri[this->uri.size() - 1] != '/')
 		this->uri += "/";
@@ -44,6 +48,7 @@ Location &Location::operator=(const Location &other) {
 	this->flagsMethods = other.flagsMethods;
 	this->cgi = other.cgi;
 	this->autoindex = other.autoindex;
+	this->redirect = other.redirect;
 	return *this;
 }
 
@@ -117,6 +122,61 @@ size_t	Location::setAutoIndex(size_t i, std::vector<std::string> &locationBlock)
 	return (i);
 }
 
+static bool isNumeric(const std::string& str) {
+	for (std::string::const_iterator it = str.begin(); it != str.end(); ++it) {
+		if (!isdigit(*it)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+static bool isValidURL(const std::string& url) {
+	const std::string http = "http://";
+	const std::string https = "https://";
+		
+	// Check if the URL starts with a valid scheme
+	if (url.compare(0, http.length(), http) == 0 ||
+		url.compare(0, https.length(), https) == 0) {
+		
+		// Find the position of "://"
+		size_t pos = url.find("://");
+		
+		// Ensure there's something after the scheme
+		if (pos != std::string::npos && pos + 3 < url.length()) {
+			// Further checks can be added here to validate the domain, path, etc.
+			return true;
+		}
+	}
+
+	return false;
+}
+
+size_t	Location::setRedirect(size_t i, std::vector<std::string> &locationBlock) {
+	while (i < locationBlock.size())
+	{
+		if (locationBlock[i] == ";")
+		{
+			if (isNumeric(locationBlock[i - 2]) && isValidURL(locationBlock[i - 1])) {
+				redirect.first = std::atoi(locationBlock[i - 2].c_str());
+				/* if (redirect.first > 305 || redirect.first < 300) {
+					throw invalidRedirectException()
+				} */
+				redirect.second = locationBlock[i - 1];
+			} 
+			/* else {
+				throw invalidRedirectException()
+			} */
+			break ;
+		}
+		++i;
+	}
+	return (i);
+}
+
+std::pair<int, std::string>	Location::getRedirect() {
+	return redirect;
+}
 
 int	Location::getMethods()
 {

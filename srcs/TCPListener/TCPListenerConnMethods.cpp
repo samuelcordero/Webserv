@@ -16,6 +16,8 @@ Response TCPListener::analizer(const Request &request, Server *s)
 		{
 			if ((locations[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
+				if (locations[i].getRedirect().first > 300 && locations[i].getRedirect().first < 308) 
+					return (Response(locations[i].getRedirect().first, locations[i].getRedirect().second, ""));
 				if (uri_pair.second == "" && locations[i].hasAutoIndex())
 					return (Response(200, locations[i].getAutoIndex(), true, true));
 				else if (uri_pair.second == "")
@@ -104,7 +106,7 @@ Response TCPListener::Head(std::pair<std::string, std::string> uri_pair, Locatio
 		buffer << file.rdbuf();
 		std::string file_contents = buffer.str();
 		file.close();
-		return Response(200, file_contents, false, true);
+		return Response(200, file_contents, false, file_path);
 	}
 	else
 	{

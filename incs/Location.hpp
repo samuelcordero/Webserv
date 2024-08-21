@@ -17,6 +17,7 @@ class Location {
 		int									flagsMethods;
 		std::pair<std::string, std::string>	cgi;
 		bool								autoindex;
+		std::pair<int, std::string>			redirect;
 	public:
 		Location(std::vector<std::string> locationBlock);
 		Location(const Location &other);
@@ -34,5 +35,7 @@ class Location {
 		size_t						setCgi(size_t i, std::vector<std::string> &locationBlock);
 		size_t						setRoot(size_t i, std::vector<std::string> &locationBlock);
 		size_t						setAutoIndex(size_t i, std::vector<std::string> &locationBlock);
+		size_t						setRedirect(size_t i, std::vector<std::string> &locationBlock);
+		std::pair<int, std::string>	getRedirect();
 		Location					&operator=(const Location &other);
 };

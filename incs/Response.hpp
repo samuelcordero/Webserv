@@ -16,6 +16,7 @@ private:
 
 public:
 	Response();
+	Response(int redirectCode, const std::string &location, const std::string &body);
 	Response(int status_code, const std::string &body, bool include_body, bool include_contType);
 	Response(int status_code, const std::string &body, bool include_body, const std::string &filename);
 	Response(const Response &other);

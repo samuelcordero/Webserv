@@ -4,14 +4,21 @@
 //result is returned in a pair of strings
 std::pair<std::string, std::string> TCPListener::splitUri(std::string uri)
 {
-	std::size_t pos = uri.find_last_of('/');
+	std::string tmp = uri;
+    std::string::size_type pos = uri.find('?');
+
+    if (pos != std::string::npos) {
+        tmp = uri.substr(0, pos);
+    }
+
+	pos = tmp.find_last_of('/');
 
 	if (pos == std::string::npos)
-		return std::make_pair("", uri);
+		return std::make_pair("", tmp);
 	else if (pos == uri.length())
-		return std::make_pair(uri, "");
+		return std::make_pair(tmp, "");
 	else
-		return std::make_pair(uri.substr(0, pos + 1), uri.substr(pos + 1));
+		return std::make_pair(tmp.substr(0, pos + 1), tmp.substr(pos + 1));
 }
 
 //returns time since epoch in milliseconds
@@ -51,7 +58,7 @@ bool	TCPListener::checkCgiRequest(int fd, Server *s) {
 		for (size_t i = 0; i < locations.size(); ++i) {
 			if (locations[i].getUri() == uri_pair.first) {
 				if (locations[i].getCgi().first == file_ext
-					&& ((locations[i].getMethods() & r.getNumMethod()) == POST))
+					&& ((locations[i].getMethods() & r.getNumMethod()) == POST || (locations[i].getMethods() & r.getNumMethod()) == GET)) //allow both get and post methods for cgi
 						return true;
 				return false;
 			}
@@ -84,13 +91,20 @@ std::pair<int, int>	TCPListener::createCgiHandler(int fd, Server *s) {
 	CGIHandler *handler = new CGIHandler(scriptPath, locations[i].getCgi().second, fd, clients[fd].getRequest());
 	clients[fd].setCGI(handler);
 	clients[fd].setCgiStartTime(getCurrentEpochMillis());
-	cgi_handlers[handler->getWriteEnd()] = handler;
+	int writeEnd = handler->getWriteEnd();
+	if (clients[fd].getRequest().getNumMethod() == POST) {
+		cgi_handlers[writeEnd] = handler;
+		std::cerr << "Adding write end with fd " << handler->getWriteEnd() << "...\n";
+		matcher[writeEnd] = CGI_WRITE;
+	} else {
+		close(writeEnd);
+		writeEnd = -1;
+		handler->handleRequest();
+	}
 	cgi_handlers[handler->getReadEnd()] = handler;
-	std::cerr << "Adding write end with fd " << handler->getWriteEnd() << "...\n";
-	matcher[handler->getWriteEnd()] = CGI_WRITE;
 	std::cerr << "Adding read end with fd " << handler->getReadEnd() << "...\n";
 	matcher[handler->getReadEnd()] = CGI_READ;
-	return std::pair<int, int>(handler->getReadEnd(), handler->getWriteEnd());
+	return std::pair<int, int>(writeEnd, handler->getReadEnd());
 }
 
 //kills cgi when it timesout
