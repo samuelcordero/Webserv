@@ -9,12 +9,31 @@ Controller::~Controller() {
 	}
 }
 
+void	Controller::checkServers() {
+	for (std::vector<Server>::size_type i = 0; i < servers.size() - 1; ++i) {
+		for (std::vector<Server>::size_type j = i + 1; j < servers.size(); ++j) {
+			if (servers[i].getPort() == servers[j].getPort()
+				&& servers[i].getName() == servers[j].getName())
+			{
+				std::string error = "Error: duplicate of server with name " + servers[i].getName() + " and port " + _int_to_string(servers[i].getPort());
+				throw ParseErrorException(error.c_str());
+			}
+		}
+	}
+}
+
 bool	Controller::parse(std::string config_file_path) {
-	Parser p(config_file_path);
-	memset(listener_matcher, 0, sizeof(TCPListener *) * 4096);
-	if (p.noErrors()) {
-		servers = p.getServers();
-		return true;
+	try {
+		Parser p(config_file_path);
+		memset(listener_matcher, 0, sizeof(TCPListener *) * 4096);
+		if (p.noErrors()) {
+			servers = p.getServers();
+			checkServers();
+			return true;
+		}
+	} catch (const ParseErrorException &e) {
+		std::cerr << "Parser exception: " << e.what() << std::endl;
+		exit(1);
 	}
 	return false;
 }

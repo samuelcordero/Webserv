@@ -13,8 +13,8 @@ std::string readConfigFile(std::string filePath){ //read the config file
 	std::ifstream file(filePath.c_str());
 
 	if (!file.is_open()) {
-		std::cerr << "Error: could not open file" << std::endl;
-		return "";
+		std::string error = "Error: could not open file" + filePath;
+		throw ParseErrorException(error.c_str());
 	}
 	std::ostringstream oss;
 	oss << file.rdbuf();
@@ -88,10 +88,9 @@ void	Parser::trimComments()
 {
 	std::ifstream	inputFile(this->filePath.c_str());
 
-	if (!inputFile.is_open())
-	{
-		std::cerr << "Couldn´t open the file" << std::endl;
-		return;
+	if (!inputFile.is_open()) {
+		std::string error = "Error: could not open file" + filePath;
+		throw ParseErrorException(error.c_str());
 	}
 
 	std::string	line;
@@ -146,8 +145,8 @@ int	Parser::setValues()
 		//std::cerr << "at word " <<  this->words[i] << " with status " << prevStatus << std::endl;
 		if (prevStatus == 1)
 		{
-			std::cerr << "Error non valid config file." << std::endl;
-			return (0);
+			std::string error = "Error: non valid config file " + filePath;
+			throw ParseErrorException(error.c_str());
 		}
 		i++;
 	}
