@@ -14,6 +14,7 @@ class Controller {
 
 		std::pair<size_t, std::vector<epoll_event> *>	events;
 		void	solveEvent(epoll_event ev);
+		void	checkServers();
 	public:
 		Controller();
 		~Controller();

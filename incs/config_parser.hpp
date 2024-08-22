@@ -9,6 +9,7 @@
 #include "Location.hpp"
 #include "Server.hpp"
 #include <cstdlib>
+#include "Exceptions.hpp"
 
 enum	States{
 	START,
@@ -57,7 +58,6 @@ class Parser{
 		int		setValues();
 		int		getStatus(std::string word, int prevStatus);
 		void	createServers();
-		//void	run();
 		std::vector<Server> getServers();
 		bool	noErrors();
 };

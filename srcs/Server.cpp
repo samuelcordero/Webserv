@@ -86,8 +86,13 @@ void	Server::setName(size_t i)
 	{
 		if (this->words[i + 1] == ";")
 		{
-			this->name = this->words[i];
-			break;
+			if (words[i - 1] == "name") {
+				this->name = this->words[i];
+				break;
+			} else {
+				std::string error = "Error: too many names for server close to " + words[i] ;
+				throw ParseErrorException(error.c_str());
+			}
 		}
 		i++;
 	}
@@ -99,8 +104,8 @@ static	int	extractPort(const std::string &address)
 
 	if (colonPos == std::string::npos)
 	{
-		std::cerr << "Couldn´t find port" << std::endl;
-		return (-1);
+		std::string error = "Error: couldn't copnvert port to int";
+		throw ParseErrorException(error.c_str());
 	}
 
 	std::string	strPort = address.substr(colonPos + 1);
@@ -109,8 +114,8 @@ static	int	extractPort(const std::string &address)
 
 	if (port == 0 && strPort != "0")
 	{
-		std::cerr << "Non valid port" << std::endl;
-		return (-1);
+		std::string error = "Error: non valid port on server";
+		throw ParseErrorException(error.c_str());
 	}
 
 	return (port);
@@ -122,9 +127,14 @@ void	Server::setListen(size_t i)
 	{
 		if (this->words[i + 1] == ";")
 		{
-			this->listen = this->words[i];
-			this->port = extractPort(this->words[i]);
-			break;
+			if (words[i - 1] == "listen") {
+				this->listen = this->words[i];
+				this->port = extractPort(this->words[i]);
+				break;
+			} else {
+				std::string error = "Error: too many listen params on server " + name;
+				throw ParseErrorException(error.c_str());
+			}
 		}
 		i++;
 	}
@@ -154,16 +164,21 @@ void	Server::setMaxBodySize(size_t i)
 	while (i < this->words.size())
 	{
 		if (this->words[i + 1] == ";")
-		{	
-			char *endPtr;
-			this->maxBodySize = std::strtoul(this->words[i].c_str(), &endPtr, 10);
-			if (*endPtr != '\0' || endPtr == this->words[i].c_str())
-			{
-				std::cerr << "Error non valid body size, set to default" << std::endl;
-				this->maxBodySize = 1000000;
-				return ;
+		{
+			if (words[i -1] == "Max_Body_Size") {
+				char *endPtr;
+				this->maxBodySize = std::strtoul(this->words[i].c_str(), &endPtr, 10);
+				if (*endPtr != '\0' || endPtr == this->words[i].c_str())
+				{
+					std::cerr << "Error non valid body size, set to default" << std::endl;
+					this->maxBodySize = 1000000;
+					return ;
+				}
+				break;
+			} else {
+				std::string error = "Error: too many params for Max_Body_Size params on server " + name;
+				throw ParseErrorException(error.c_str());
 			}
-			break;
 		}
 		i++;
 	}
@@ -174,6 +189,10 @@ void	Server::addToErrorMap(size_t i)
 	if (words[i + 3] == ";")
 	{	
 		errorMap[words[i + 1]] = words[i + 2];
+	}
+	else {
+		std::string error = "Error: non valid custom error on server " + name;
+		throw ParseErrorException(error.c_str());
 	}
 }
 

@@ -10,13 +10,24 @@ int main(int argc, char **argv)
 
 	if (argc > 2)
 	{
-		std::cerr << "Arguments should be one config file\n";
+		std::cerr << "Arguments should be one config file or none (default path ./config/default.conf)\n";
 		return (1);
 	}
 	if (argc == 1)
 		config_file_path = "config/default.conf";
 	else
 		config_file_path = argv[1];
+	
+	if (c.parse(config_file_path))
+		c.run();
+	else
+	{
+		std::cerr << "Config file contains errors. Exiting...\n";
+		exit(EXIT_FAILURE);
+	}
+}
+
+//Tests: (some may be unupdated!)
 
 	/* // test cgi
 	std::cout << "CGI TEST" << std::endl;
@@ -35,7 +46,7 @@ int main(int argc, char **argv)
 		std::cout << "Indexer path: " << indexer.getPath() << std::endl;
 		std::cout << "Indexer html: " << indexer.getHtml() << std::endl;
 		// end of directory listing test
-	 */
+	
 
 	// MIME type test
 	std::string filename;
@@ -61,12 +72,4 @@ int main(int argc, char **argv)
 	mimeType = getMimeType(filename);
 	std::cout << "The MIME type of " << filename << " is: " << mimeType << std::endl;
 	// end of MIME type test
-
-	if (c.parse(config_file_path))
-		c.run();
-	else
-	{
-		std::cerr << "Config file contains errors. Exiting...\n";
-		exit(EXIT_FAILURE);
-	}
-}
+	*/
