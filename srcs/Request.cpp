@@ -9,7 +9,7 @@ Request::Request(std::string &request)
 {
     size_t pos = 0, end_pos = 0;
 
-	content_len = 0;
+    content_len = 0;
     // Parse the request line (e.g., "GET / HTTP/1.1")
     end_pos = request.find("\r\n");
     std::string request_line = request.substr(pos, end_pos - pos);
@@ -42,23 +42,68 @@ Request::Request(std::string &request)
     }
 
     // Parse body
-	char	*end;
-	content_len = 0;
-	body = "";
-	if (headers.find("Content-Length") != headers.end()) { //generate body with content-length
-		content_len = std::strtol(headers["Content-Length"].c_str(), &end, 10);
-		if (*end != '\0') {
-			std::cerr << "Body may be too big!\n";
-		} else {
-			if (request.size() - pos >= content_len) {
-				body = request.substr(pos, content_len);
-				request = request.substr(pos + content_len);
-			} else {
-				body = "";
+    body = "";
+    if (headers.find("Content-Length") != headers.end()) 
+    { 
+        // Generate body with content-length
+        char *end;
+        content_len = std::strtol(headers["Content-Length"].c_str(), &end, 10);
+        if (*end != '\0') {
+            std::cerr << "Invalid Content-Length!\n";
+        } else {
+            if (request.size() - pos >= content_len) {
+                body = request.substr(pos, content_len);
+                pos += content_len; // Advance position after body
+				request = request.substr(pos);
+            } else {
+                body = ""; // Incomplete body, handle it accordingly
+            }
+        }
+    }
+    else if (headers.find("Transfer-Encoding") != headers.end() && headers["Transfer-Encoding"] == "chunked")
+    {
+        // Handle chunked transfer encoding
+        while (true)
+        {
+            // Find the size of the next chunk
+            end_pos = request.find("\r\n", pos);
+            if (end_pos == std::string::npos)
+                break;
+
+            std::string chunk_size_str = request.substr(pos, end_pos - pos);
+            pos = end_pos + 2;
+
+            // Convert the chunk size from hex to a numeric value
+            size_t chunk_size = std::strtoul(chunk_size_str.c_str(), NULL, 16);
+            if (chunk_size == 0) {
+				request = request.substr(pos);
+                break; // Last chunk (size 0) indicates the end of the body
 			}
-		}
-	} else { request = ""; }
+
+            // Extract the chunk data
+            if (pos + chunk_size <= request.size())
+            {
+                body += request.substr(pos, chunk_size);
+                pos += chunk_size + 2; // Skip over the chunk and the trailing \r\n
+            }
+            else
+            {
+                break; // Incomplete chunk, handle it accordingly
+            }
+        }
+    }
+    else
+    {
+        // No Content-Length or Transfer-Encoding specified, handle as needed
+        // In many cases, this means no body
+        body = "";
+		request = request.substr(pos);
+    }
+
+    // Remove the parsed portion from the original request string
+    //request = request.substr(pos);
 }
+
 
 Request::Request(const Request &other)
 {

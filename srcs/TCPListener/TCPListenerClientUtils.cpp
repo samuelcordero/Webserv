@@ -45,13 +45,27 @@ std::pair<int, int> TCPListener::readData(int fd)
 	} else
 		clients[fd].setLastConn(getCurrentEpochMillis());
 	if (bytesRead > 0) {
+		std::cerr << bytesRead << " bytes read\n";
 		clients[fd].addToRequestBuffer(std::string(buffer, bytesRead));
-		Request r = Request(clients[fd].getRequestBuffer());
-		if (r.getContentLen() != r.getBody().length()) // if body not complete, skip
-			return std::pair<int, int>(0,0);
-		//std::cerr << "---- PARSED REQUEST ----\n" << r << std::endl << "---- PARSED REQUEST END ----\n";
-		clients[fd].setRequest(r);
-		return createResponse(fd);
+		httpParser.parse(clients[fd].getRequestBuffer());
+		if (httpParser.isValid()) {
+			if (httpParser.isComplete()) {
+				//std::cerr << "Raw request: {" << clients[fd].getRequestBuffer() << "}\n";
+				Request r = Request(clients[fd].getRequestBuffer());
+				if (r.getContentLen() != r.getBody().length()
+					&& (r.getHeaders().find("Transfer-Encoding") != r.getHeaders().end() && r.getHeaders()["Transfer-Encoding"] != "chunked")) // if body not complete, skip
+					return std::pair<int, int>(0,0);
+				//std::cerr << "---- PARSED REQUEST ----\n" << r << std::endl << "---- PARSED REQUEST END ----\n";
+				clients[fd].setRequest(r);
+				return createResponse(fd);
+			} else {
+				std::cerr << "Not complete!\n";
+			}
+		} else { //recheckear, hay que mandar bad request
+			std::cerr << "Invalid request detected! Clearing buffer\n";
+			clients[fd].clearRequestBuffer();
+			return createResponse(fd);
+		} 
 	}
 	return std::pair<int, int>(0,0);
 }
@@ -64,10 +78,10 @@ std::pair<int, int> TCPListener::sendData(int fd) {
 	bytes = send(fd, message.c_str(), message.length(), 0);
 	clients[fd].clearResponse();
 
-	const Request &r = clients[fd].getRequest();
+	const Request *r = &clients[fd].getRequest();
 	if (bytes == -1 || //if send fails, or request sends Connection close
-		(r.getHeaders().find("Connection") != r.getHeaders().end()
-		&& r.getHeaders()["Connection"] == "close")) {
+		(r && r->getHeaders().find("Connection") != r->getHeaders().end()
+		&& r->getHeaders()["Connection"] == "close")) {
 		disconnectClient(fd); //disconnect
 	} else
 		clients[fd].setLastConn(getCurrentEpochMillis());
@@ -97,10 +111,10 @@ void TCPListener::disconnectClient(int fd) {
 //response can be generated on the go if it refers two a static file
 //if it requires cgi, cretes a handler and returns an input and output fd for the handler through the pair
 std::pair<int, int> TCPListener::createResponse(size_t i) {
+	//server defaults to first
+	Server *s = servers[0];
 	if (clients[i].requestReady())
 	{
-		//server defaults to first
-		Server *s = servers[0];
 		for (int j = 0; j < server_ctr; ++j) {
 			if (servers[j]->getName() == getHost(clients[i].getRequest().getHeaders()["Host"])) {
 				s = servers[j];
@@ -115,6 +129,9 @@ std::pair<int, int> TCPListener::createResponse(size_t i) {
 			return createCgiHandler(i, s);
 		else
 			clients[i].setResponse(analizer(clients[i].getRequest(), s));
+	} else {
+		clients[i].setResponse(s->error(400));
 	}
+
 	return std::pair<int, int>(0,0);
 }

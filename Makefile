@@ -21,6 +21,7 @@ SRC =	srcs/CgiHandler.cpp \
 		srcs/Errors.cpp \
 		srcs/EventManager.cpp \
 		srcs/extraFunctions.cpp \
+		srcs/Http.cpp \
 		srcs/Indexer.cpp \
 		srcs/Location.cpp \
 		srcs/main.cpp \

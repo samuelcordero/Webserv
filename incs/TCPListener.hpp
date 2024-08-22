@@ -38,6 +38,7 @@
 # include "EventManager.hpp"
 # include "CgiHandler.hpp"
 # include "extraFunctions.hpp"
+# include "Http.hpp"
 
 # define MAX_EVENTS 128
 
@@ -55,6 +56,7 @@ class Server;
 class Response;
 class Location;
 class Client;
+class Http;
 
 class TCPListener {
 	private:
@@ -67,6 +69,7 @@ class TCPListener {
 		char						matcher[4096];
 		EventManager				*eventManager;
 		CGIHandler					*cgi_handlers[4096];
+		Http						httpParser;
 
 		//TCPListenerClientUtils.cpp
 		std::pair<int, int>	newClient();
