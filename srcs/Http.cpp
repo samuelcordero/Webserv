@@ -2,7 +2,7 @@
 #include <sstream>
 #include <cctype>
 
-Http::Http() : state(STATE_START), contentLength(0), bytesRead(0), chunkSize(0) {}
+Http::Http() : state(STATE_START), contentLength(0), chunkSize(0) {}
 
 State Http::parse(const std::string& data) {
     size_t pos = 0;

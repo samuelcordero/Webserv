@@ -22,7 +22,6 @@ private:
     std::string method, path, version;
     std::map<std::string, std::string> headers;
     size_t contentLength;
-    size_t bytesRead;
     size_t chunkSize;
     std::string bodyBuffer;
 
