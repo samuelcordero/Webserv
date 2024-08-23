@@ -7,15 +7,20 @@ Http::Http() : state(STATE_START), contentLength(0), chunkSize(0) {}
 State Http::parse(const std::string& data) {
     size_t pos = 0;
     std::string line;
+	state = STATE_START;
+	headers.clear();
+	contentLength = 0;
 
     while (pos < data.size()) {
         size_t endPos = data.find("\r\n", pos);
         if (endPos == std::string::npos) {
-            break; // No se encontró el delimitador, salir del bucle
-        }
-        
-        line = data.substr(pos, endPos - pos);
-		//std::cerr << "at line (" << line << ")\n";
+			if (contentLength)
+				line = data.substr(pos, contentLength);
+			else
+           		break; // No se encontró el delimitador, salir del bucle
+        } else
+        	line = data.substr(pos, endPos - pos);
+		//std::cerr << "at line (" << line << ") with state: " << state << "\n";
 
         switch (state) {
             case STATE_START:
@@ -31,12 +36,16 @@ State Http::parse(const std::string& data) {
                     // Fin de cabeceras
                     if (headers.find("Transfer-Encoding") != headers.end() &&
                         headers["Transfer-Encoding"] == "chunked") {
+						//std::cerr << "looking for chunks...\n";
                         state = STATE_CHUNK_SIZE;
                     } else if (headers.find("Content-Length") != headers.end()) {
+						//std::cerr << "not chunked but body\n";
                         std::istringstream lengthStream(headers["Content-Length"]);
                         lengthStream >> contentLength;
+						//std::cerr << " parsed content length: " << contentLength << std::endl;
                         state = STATE_BODY;
                     } else {
+						//std::cerr  << "headrs done; no body\n";
                         state = STATE_COMPLETE; // No hay cuerpo, la solicitud está completa
                     }
                 } else {

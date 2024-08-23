@@ -4,7 +4,7 @@ import cgi
 import os
 
 # directorio donde se guardarán los archivos subidos
-UPLOAD_DIR = "/home/samu/C42/Webserv/html/files"
+UPLOAD_DIR = "/home/sacorder/C42/Webserv/html/files"
 
 def save_file(file_item):
     """Guarda el archivo en el directorio de subida."""
