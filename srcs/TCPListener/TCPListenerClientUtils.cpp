@@ -47,10 +47,10 @@ std::pair<int, int> TCPListener::readData(int fd)
 	if (bytesRead > 0) {
 		std::cerr << bytesRead << " bytes read\n";
 		clients[fd].addToRequestBuffer(std::string(buffer, bytesRead));
+		//std::cerr << "Raw request: {" << clients[fd].getRequestBuffer() << "}\n";
 		httpParser.parse(clients[fd].getRequestBuffer());
 		if (httpParser.isValid()) {
 			if (httpParser.isComplete()) {
-				//std::cerr << "Raw request: {" << clients[fd].getRequestBuffer() << "}\n";
 				Request r = Request(clients[fd].getRequestBuffer());
 				if (r.getContentLen() != r.getBody().length()
 					&& (r.getHeaders().find("Transfer-Encoding") != r.getHeaders().end() && r.getHeaders()["Transfer-Encoding"] != "chunked")) // if body not complete, skip

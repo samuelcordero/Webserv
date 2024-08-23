@@ -15,7 +15,7 @@ State Http::parse(const std::string& data) {
         }
         
         line = data.substr(pos, endPos - pos);
-        pos = endPos + 2; // Mover a la siguiente línea
+		//std::cerr << "at line (" << line << ")\n";
 
         switch (state) {
             case STATE_START:
@@ -35,7 +35,6 @@ State Http::parse(const std::string& data) {
                     } else if (headers.find("Content-Length") != headers.end()) {
                         std::istringstream lengthStream(headers["Content-Length"]);
                         lengthStream >> contentLength;
-						std::cerr << "parsed content length " << contentLength << std::endl;
                         state = STATE_BODY;
                     } else {
                         state = STATE_COMPLETE; // No hay cuerpo, la solicitud está completa
@@ -76,6 +75,7 @@ State Http::parse(const std::string& data) {
             case STATE_INVALID:
                 return state;
         }
+		pos = endPos + 2; // Mover a la siguiente línea
     }
 
     return state;

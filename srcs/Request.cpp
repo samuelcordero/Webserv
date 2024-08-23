@@ -1,6 +1,7 @@
 // Implements request.hpp
 
 #include "Request.hpp"
+#include "Response.hpp"
 
 // Request constructor that takes a string as an argument
 // The string is the raw HTTP request
@@ -77,6 +78,8 @@ Request::Request(std::string &request)
             size_t chunk_size = std::strtoul(chunk_size_str.c_str(), NULL, 16);
             if (chunk_size == 0) {
 				request = request.substr(pos);
+				headers["Content-Length"] = _int_to_string(body.size());
+				content_len = body.size();
                 break; // Last chunk (size 0) indicates the end of the body
 			}
 
