@@ -80,7 +80,9 @@ State Http::parse(const std::string& data) {
             case STATE_CHUNK_DATA:
                 if (processChunkData(data, pos)) {
                     state = STATE_CHUNK_SIZE; // Listo para el siguiente chunk
-                }
+                } else {
+					state = STATE_INVALID;
+				}
                 break;
 
             case STATE_CHUNK_END:

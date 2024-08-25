@@ -85,7 +85,7 @@ std::pair<int, int>	TCPListener::createCgiHandler(int fd, Server *s) {
 
 	std::string scriptPath = locations[i].getRoot() + "/" + uri_pair.second;
 	
-	std::cerr << "Building cgi response for resource " << uri_pair.second << " at location " << uri_pair.first
+	std::cerr << "Building cgi response for resource " << uri_pair.second << " at location " << scriptPath
 		<< " for client " << fd << std::endl;
 
 	CGIHandler *handler = new CGIHandler(scriptPath, locations[i].getCgi().second, fd, clients[fd].getRequest());

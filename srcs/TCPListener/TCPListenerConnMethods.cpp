@@ -72,6 +72,11 @@ Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location
 		return s->error(404);
 	if (access(file_path.c_str(), R_OK))
 		return s->error(403);
+	if (isDirectory(file_path)) {
+		Indexer index(file_path);
+		return (Response(200, index.getHtml(), true, true));
+	}
+
 	std::ifstream file(file_path.c_str());
 
 	if (file.is_open())
@@ -92,11 +97,16 @@ Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location
 Response TCPListener::Head(std::pair<std::string, std::string> uri_pair, Location &location, Server *s)
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
+	
 
 	if (access(file_path.c_str(), F_OK))
 		return s->error(404);
 	if (access(file_path.c_str(), R_OK))
 		return s->error(403);
+	if (isDirectory(file_path)) {
+		Indexer index(file_path);
+		return (Response(200, index.getHtml(), false, true));
+	}
 	//std::cerr << "opening file " << file_path << std::endl;
 	std::ifstream file(file_path.c_str());
 

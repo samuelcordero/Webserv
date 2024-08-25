@@ -104,7 +104,7 @@ void CGIHandler::executeCGIScript()
 
         // Prepare arguments for execve
         std::vector<char *> argv;
-		argv.push_back(const_cast<char *>(interpreter.c_str()));
+		//argv.push_back(const_cast<char *>(interpreter.c_str()));
         argv.push_back(const_cast<char *>(scriptPath.c_str()));
         argv.push_back(NULL); // The last element of argv must be NULL
 
@@ -133,7 +133,7 @@ void CGIHandler::executeCGIScript()
 
 		envp.push_back(NULL); // The last element of envp must be NULL
 
-        execve(interpreter.c_str(), argv.data(), envp.data());
+        execve(scriptPath.c_str(), argv.data(), envp.data());
 
         // If execve fails, the following lines will execute
         std::cerr << "Failed to execute CGI script\n";

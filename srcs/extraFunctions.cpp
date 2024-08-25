@@ -147,3 +147,14 @@ std::string getHost(const std::string& hostport) {
     // Si no encuentra ':', se asume que todo el string es el host
     return hostport;
 }
+
+bool isDirectory(const std::string& path) {
+    struct stat statbuf;
+    // Check if the stat call is successful
+    if (stat(path.c_str(), &statbuf) != 0) {
+        // Error occurred (file doesn't exist, or we don't have permission)
+        return false;
+    }
+    // Use S_ISDIR macro to check if it's a directory
+    return S_ISDIR(statbuf.st_mode);
+}

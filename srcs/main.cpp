@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 
 	2. POST chunked requests
 
-	curl -X POST http://localhost:8080/files/some%20%20file.txt \                                 3 ⨯
+	curl -X POST http://localhost:8080/files/some%20%20file.txt \
   --header "Transfer-Encoding: chunked" \
   --header "Content-Type: text/plain" \
   --data-binary @<(echo -en '4\r\nart=\r\n7\r\nMozilla\r\n9\r\nDeveloper\r\n7\r\nNetwork\r\n0\r\n\r\n')
