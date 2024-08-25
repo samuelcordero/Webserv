@@ -158,3 +158,17 @@ bool isDirectory(const std::string& path) {
     // Use S_ISDIR macro to check if it's a directory
     return S_ISDIR(statbuf.st_mode);
 }
+
+//returns time since epoch in milliseconds
+long long getCurrentEpochMillis() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return static_cast<long long>(tv.tv_sec) * 1000 + tv.tv_usec / 1000;
+}
+
+//returns true once the threshold is greater or equal to the time diff
+bool isTimeout(long long startMillis, long long endMillis, int thresholdSeconds) {
+    long long diffMillis = endMillis - startMillis;
+    long long diffSeconds = diffMillis / 1000;
+    return diffSeconds >= thresholdSeconds;
+}

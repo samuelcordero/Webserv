@@ -17,7 +17,6 @@
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <sys/epoll.h>
-# include <sys/time.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
 # include <unistd.h>
@@ -29,7 +28,7 @@
 # include <cstring>
 # include <utility>
 # include <fstream>
-# include <ctime>
+
 
 # include "Server.hpp"
 # include "Response.hpp"
@@ -43,7 +42,7 @@
 # define MAX_EVENTS 128
 
 # define CONN_TIMEOUT 15 //timeout for connections in seconds
-# define CGI_TIMEOUT 7 //timeout for CGI in seconds
+# define CGI_TIMEOUT 10 //timeout for CGI in seconds
 
 # define CLIENT 1
 # define CGI_WRITE 2
@@ -90,8 +89,6 @@ class TCPListener {
 		//TCPListenerUtils.cpp
 		std::pair<std::string,
 			std::string>	splitUri(std::string uri);
-		long long			getCurrentEpochMillis();
-		bool 				isTimeout(long long startMillis, long long endMillis, int thresholdSeconds);
 		bool				checkCgiRequest(int fd, Server *s);
 		std::pair<int, int>	createCgiHandler(int fd, Server *s);
 		void				killCGI(int fd);
@@ -106,6 +103,7 @@ class TCPListener {
 		void	setEventManager(EventManager *eventManager);
 		std::pair<int, int>		checkEvent(epoll_event ev);
 		bool	attachServer(Server *s);
+		void	checkForTimeouts();
 		//void	run();
 };
 

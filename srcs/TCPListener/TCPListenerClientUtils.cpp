@@ -135,3 +135,12 @@ std::pair<int, int> TCPListener::createResponse(size_t i) {
 
 	return std::pair<int, int>(0,0);
 }
+
+void	TCPListener::checkForTimeouts() {
+	for (int i = 0; i < 4096; ++i) {
+		if (matcher[i] == CLIENT && isTimeout(clients[i].getLastConn(), getCurrentEpochMillis(), CONN_TIMEOUT)) {
+			std::cerr << "Timeout met: ";
+			disconnectClient(i);
+		}
+	}
+}

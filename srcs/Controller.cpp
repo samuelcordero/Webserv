@@ -76,10 +76,17 @@ void	Controller::run() {
 	//main execution loop
 	while (true) {
 		events = event_manager.getNonblockingEvents();
+		last_check = getCurrentEpochMillis();
 
 		for (size_t i = 0; i < events.first; ++i) {
 			//std::cerr << "solving event for " << events.second->at(i).data.fd << std::endl;
 			solveEvent(events.second->at(i));
+		}
+		if (isTimeout(last_check, getCurrentEpochMillis(), TBCHECKS)) {
+			for (std::map<int, TCPListener *>::iterator it = listeners.begin(); it != listeners.end(); ++it) {
+				it->second->checkForTimeouts();
+			}
+			last_check = getCurrentEpochMillis();
 		}
 	}
 }

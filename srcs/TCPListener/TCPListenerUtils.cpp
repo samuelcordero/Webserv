@@ -21,21 +21,6 @@ std::pair<std::string, std::string> TCPListener::splitUri(std::string uri)
 		return std::make_pair(tmp.substr(0, pos + 1), tmp.substr(pos + 1));
 }
 
-//returns time since epoch in milliseconds
-long long TCPListener::getCurrentEpochMillis() {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return static_cast<long long>(tv.tv_sec) * 1000 + tv.tv_usec / 1000;
-}
-
-//returns true once the threshold is greater or equal to the time diff
-bool TCPListener::isTimeout(long long startMillis, long long endMillis, int thresholdSeconds) {
-    long long diffMillis = endMillis - startMillis;
-    long long diffSeconds = diffMillis / 1000;
-    return diffSeconds >= thresholdSeconds;
-}
-
-
 //checks if a request is a valid cgi requests
 bool	TCPListener::checkCgiRequest(int fd, Server *s) {
 	Request r = clients[fd].getRequest();
