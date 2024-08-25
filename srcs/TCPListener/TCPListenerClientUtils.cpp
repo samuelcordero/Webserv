@@ -45,7 +45,7 @@ std::pair<int, int> TCPListener::readData(int fd)
 	} else
 		clients[fd].setLastConn(getCurrentEpochMillis());
 	if (bytesRead > 0) {
-		std::cerr << bytesRead << " bytes read\n";
+		//std::cerr << bytesRead << " bytes read\n";
 		clients[fd].addToRequestBuffer(std::string(buffer, bytesRead));
 		//std::cerr << "Raw request: {" << clients[fd].getRequestBuffer() << "}\n";
 		httpParser.parse(clients[fd].getRequestBuffer());
@@ -58,9 +58,9 @@ std::pair<int, int> TCPListener::readData(int fd)
 				//std::cerr << "---- PARSED REQUEST ----\n" << r << std::endl << "---- PARSED REQUEST END ----\n";
 				clients[fd].setRequest(r);
 				return createResponse(fd);
-			} else {
+			} /* else {
 				std::cerr << "Not complete!\n";
-			}
+			} */
 		} else { //recheckear, hay que mandar bad request
 			std::cerr << "Invalid request detected! Clearing buffer\n";
 			clients[fd].clearRequestBuffer();

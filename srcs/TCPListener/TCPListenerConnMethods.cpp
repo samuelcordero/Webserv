@@ -135,13 +135,25 @@ Response TCPListener::Delete(std::pair<std::string, std::string> uri_pair, Locat
 }
 
 // POST method handler
-//nginx returns 405 if posting to a static file (no cgi)
+//nginx returns 405 if posting to a static file (no cgi), but we write/rewrite to allow easy upload
 Response TCPListener::Post(std::pair<std::string, std::string> uri_pair, Location &location, Server *s, const Request &request)
 {
-	(void) uri_pair;
-	(void) location;
-	(void) request;
-	return s->error(405);
+	std::string file_path = location.getRoot() + "/" + uri_pair.second;
+
+	if (access(file_path.c_str(), F_OK))
+		return s->error(404);
+	if (access(file_path.c_str(), R_OK))
+		return s->error(403);
+	if (access(file_path.c_str(), W_OK))
+		return s->error(403);
+	std::ofstream outfile;
+	std::cerr << "opening file " << file_path << std::endl;
+	outfile.open(file_path.c_str());
+	if (!outfile.is_open())
+		return s->error(500);
+	outfile << request.getBody();
+	outfile.close();
+	return Response(200, request.getBody(), true, uri_pair.second);
 }
 
 //event handler for sending information to cgi through its input fd

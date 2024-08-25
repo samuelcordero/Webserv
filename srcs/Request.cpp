@@ -64,47 +64,60 @@ Request::Request(std::string &request)
     else if (headers.find("Transfer-Encoding") != headers.end() && headers["Transfer-Encoding"] == "chunked")
     {
         // Handle chunked transfer encoding
-        while (true)
-        {
-            // Find the size of the next chunk
-            end_pos = request.find("\r\n", pos);
-            if (end_pos == std::string::npos)
-                break;
+		std::cerr << "parsing chunks!\n";
+		// skip the total size of the chunks (already checked)
+        end_pos = request.find("\r\n", pos);
 
-            std::string chunk_size_str = request.substr(pos, end_pos - pos);
-            pos = end_pos + 2;
+        std::string chunk_size_str = request.substr(pos, end_pos - pos);
+        pos = end_pos + 2;
 
-            // Convert the chunk size from hex to a numeric value
-            size_t chunk_size = std::strtoul(chunk_size_str.c_str(), NULL, 16);
-            if (chunk_size == 0) {
-				request = request.substr(pos);
-				headers["Content-Length"] = _int_to_string(body.size());
-				content_len = body.size();
-                break; // Last chunk (size 0) indicates the end of the body
+    	// Convert the chunk size from hex to a numeric value
+        size_t total_chunk_size = std::strtoul(chunk_size_str.c_str(), NULL, 16);
+		if (total_chunk_size != 0) {
+			while (true)
+			{
+				// Find the size of the next chunk
+				end_pos = request.find("\r\n", pos);
+				if (end_pos == std::string::npos)
+					break;
+
+				std::string chunk_size_str = request.substr(pos, end_pos - pos);
+				pos = end_pos + 2;
+
+				// Convert the chunk size from hex to a numeric value
+				size_t chunk_size = std::strtoul(chunk_size_str.c_str(), NULL, 16);
+				if (chunk_size == 0) {
+					request = request.substr(pos);
+					headers["Content-Length"] = _int_to_string(body.size());
+					content_len = body.size();
+					break; // Last chunk (size 0) indicates the end of the body
+				}
+
+				// Extract the chunk data
+				if (pos + chunk_size <= request.size())
+				{
+					body += request.substr(pos, chunk_size);
+					pos += chunk_size + 2; // Skip over the chunk and the trailing \r\n
+				}
+				else
+				{
+					break; // Incomplete chunk, handle it accordingly
+				}
 			}
-
-            // Extract the chunk data
-            if (pos + chunk_size <= request.size())
-            {
-                body += request.substr(pos, chunk_size);
-                pos += chunk_size + 2; // Skip over the chunk and the trailing \r\n
-            }
-            else
-            {
-                break; // Incomplete chunk, handle it accordingly
-            }
-        }
+		} else {
+			request = request.substr(pos);
+			headers["Content-Length"] = _int_to_string(0);
+			content_len = body.size();
+		}
     }
     else
     {
-        // No Content-Length or Transfer-Encoding specified, handle as needed
+        // No Content-Length or Transfer-Encoding specified
         // In many cases, this means no body
         body = "";
 		request = request.substr(pos);
     }
 
-    // Remove the parsed portion from the original request string
-    //request = request.substr(pos);
 }
 
 

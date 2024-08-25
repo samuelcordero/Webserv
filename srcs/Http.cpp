@@ -2,7 +2,7 @@
 #include <sstream>
 #include <cctype>
 
-Http::Http() : state(STATE_START), contentLength(0), chunkSize(0) {}
+Http::Http() : state(STATE_START), contentLength(0), chunkSize(0), totalChunkSize(0) {}
 
 State Http::parse(const std::string& data) {
     size_t pos = 0;
@@ -37,7 +37,7 @@ State Http::parse(const std::string& data) {
                     if (headers.find("Transfer-Encoding") != headers.end() &&
                         headers["Transfer-Encoding"] == "chunked") {
 						//std::cerr << "looking for chunks...\n";
-                        state = STATE_CHUNK_SIZE;
+                        state = STATE_TOTAL_CHUNKS_SIZE;
                     } else if (headers.find("Content-Length") != headers.end()) {
 						//std::cerr << "not chunked but body\n";
                         std::istringstream lengthStream(headers["Content-Length"]);
@@ -56,6 +56,16 @@ State Http::parse(const std::string& data) {
             case STATE_BODY:
                 if (processBody(data, pos)) {
                     state = STATE_COMPLETE;
+                } else {
+					state = STATE_INCOMPLETE;
+				}
+                break;
+
+			case STATE_TOTAL_CHUNKS_SIZE:
+                if (parseTotalChunkSize(line)) {
+                    state = (totalChunkSize == 0) ? STATE_CHUNK_END : STATE_CHUNK_SIZE;
+                } else {
+                    state = STATE_INVALID;
                 }
                 break;
 
@@ -75,11 +85,15 @@ State Http::parse(const std::string& data) {
 
             case STATE_CHUNK_END:
                 // Manejar el final de la transferencia en chunks (especificado por "\r\n" después del chunk final)
-                if (line.empty()) {
+                if (line.empty() && totalChunkSize == contentLength) {
                     state = STATE_COMPLETE;
-                }
+                } else {
+					std::cerr << "total chunk size: " << totalChunkSize << "read: " << contentLength << std::endl;
+					state = STATE_INVALID;
+				}
                 break;
 
+			case STATE_INCOMPLETE:
             case STATE_COMPLETE:
             case STATE_INVALID:
                 return state;
@@ -123,13 +137,22 @@ bool Http::processBody(const std::string& data, size_t& bytesRead) {
     }
 
     size_t bodyLength = data.size() - (bodyStart + 4);
-    bytesRead += bodyLength;
-    return bytesRead >= contentLength;
+	bytesRead += bodyLength;
+    return bodyLength >= contentLength;
+}
+
+bool Http::parseTotalChunkSize(const std::string& line) {
+    std::istringstream lineStream(line);
+    lineStream >> std::hex >> totalChunkSize;
+	if (totalChunkSize)
+		contentLength += line.length();
+    return !lineStream.fail();
 }
 
 bool Http::parseChunkSize(const std::string& line) {
     std::istringstream lineStream(line);
     lineStream >> std::hex >> chunkSize;
+	contentLength += line.length() + 2;
     return !lineStream.fail();
 }
 
@@ -140,8 +163,9 @@ bool Http::processChunkData(const std::string& data, size_t& bytesRead) {
     }
 
     size_t chunkDataLength = chunkDataStart - bytesRead;
+	contentLength += chunkDataLength + 2;
     bytesRead += chunkDataLength;
-    return bytesRead >= chunkSize;
+    return chunkDataLength == chunkSize;
 }
 
 std::string Http::trim(const std::string& str) {
