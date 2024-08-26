@@ -139,7 +139,7 @@ Response TCPListener::Delete(std::pair<std::string, std::string> uri_pair, Locat
 		return s->error(403);
 
 	if (remove(file_path.c_str()) == 0)
-		return Response(204, "", false, false);
+		return Response(204, "", false, true);
 	else
 		return s->error(500);
 }
@@ -217,8 +217,12 @@ std::pair<int, int>	TCPListener::CGI2Client(int fd) {
 		response_buffer.append(read_buffer, bytes_read);
 		//std::cerr << "read " << bytes_read << " bytes from cgi\n";
 	}
-	std::cerr << "Response cgi: {" << response_buffer << "}\n";
-	clients[client_fd].setResponse(Response(200, response_buffer, true, false));
+	//std::cerr << "Response cgi: {" << response_buffer << "}\n";
+	if (cgi_handlers[fd]->getExitCode()) {
+		clients[client_fd].setResponse(Response(500, response_buffer, true, false));
+	} else {
+		clients[client_fd].setResponse(Response(200, response_buffer, true, false));
+	}
 	eventManager->removeFromMonitoring(cgi_stdout);
 	close(cgi_stdout);
 	clients[client_fd].setCGI(NULL);

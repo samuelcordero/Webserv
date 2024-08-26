@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   TCPListener.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: agserran <agserran@student.42madrid.com    +#+  +:+       +#+        */
+/*   By: sacorder <sacorder@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/15 12:59:14 by sacorder          #+#    #+#             */
-/*   Updated: 2024/08/15 12:18:24 by agserran         ###   ########.fr       */
+/*   Updated: 2024/08/26 11:38:56 by sacorder         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,7 @@
 
 # define MAX_EVENTS 128
 
-# define CONN_TIMEOUT 15 //timeout for connections in seconds
+# define CONN_TIMEOUT 13 //timeout for connections in seconds
 # define CGI_TIMEOUT 10 //timeout for CGI in seconds
 
 # define CLIENT 1

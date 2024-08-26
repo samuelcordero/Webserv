@@ -74,9 +74,9 @@ void	Controller::run() {
 	}
 
 	//main execution loop
+	last_check = getCurrentEpochMillis();
 	while (true) {
 		events = event_manager.getNonblockingEvents();
-		last_check = getCurrentEpochMillis();
 
 		for (size_t i = 0; i < events.first; ++i) {
 			//std::cerr << "solving event for " << events.second->at(i).data.fd << std::endl;

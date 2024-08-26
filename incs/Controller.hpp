@@ -5,7 +5,7 @@
 # include "Server.hpp"
 # include "TCPListener.hpp"
 
-# define TBCHECKS 8
+# define TBCHECKS 5
 
 class Controller {
 	private:

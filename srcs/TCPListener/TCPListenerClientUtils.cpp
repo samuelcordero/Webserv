@@ -42,8 +42,10 @@ std::pair<int, int> TCPListener::readData(int fd)
 			std::cerr << "Timeout met: ";
 			disconnectClient(fd);
 		}
-	} else
+	} else {
+		std::cerr << "omg\n";
 		clients[fd].setLastConn(getCurrentEpochMillis());
+	}
 	if (bytesRead > 0) {
 		//std::cerr << bytesRead << " bytes read\n";
 		clients[fd].addToRequestBuffer(std::string(buffer, bytesRead));
@@ -138,6 +140,7 @@ std::pair<int, int> TCPListener::createResponse(size_t i) {
 
 void	TCPListener::checkForTimeouts() {
 	for (int i = 0; i < 4096; ++i) {
+		//std::cerr << "Checking fd " << _int_to_string(i) << std::endl;
 		if (matcher[i] == CLIENT && isTimeout(clients[i].getLastConn(), getCurrentEpochMillis(), CONN_TIMEOUT)) {
 			std::cerr << "Timeout met: ";
 			disconnectClient(i);
