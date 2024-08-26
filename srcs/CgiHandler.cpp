@@ -136,7 +136,7 @@ void CGIHandler::executeCGIScript()
         execve(scriptPath.c_str(), argv.data(), envp.data());
 
         // If execve fails, the following lines will execute
-        std::cerr << "Failed to execute CGI script\n";
+        std::cerr << "Failed to execute CGI script " << scriptPath << "\n";
         std::exit(1);
     }
     else if (pid > 0)

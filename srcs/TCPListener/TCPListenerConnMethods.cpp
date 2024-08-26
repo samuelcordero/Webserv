@@ -217,6 +217,7 @@ std::pair<int, int>	TCPListener::CGI2Client(int fd) {
 		response_buffer.append(read_buffer, bytes_read);
 		//std::cerr << "read " << bytes_read << " bytes from cgi\n";
 	}
+	std::cerr << "Response cgi: {" << response_buffer << "}\n";
 	clients[client_fd].setResponse(Response(200, response_buffer, true, false));
 	eventManager->removeFromMonitoring(cgi_stdout);
 	close(cgi_stdout);
