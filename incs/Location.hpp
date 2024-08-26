@@ -22,7 +22,7 @@ class Location {
 		Location(std::vector<std::string> locationBlock);
 		Location(const Location &other);
 		~Location();
-		std::string					getUri();
+		std::string					getUri() const;
 		std::string					getRoot();
 		std::vector<std::string>	getIndex();
 		int							getMethods();

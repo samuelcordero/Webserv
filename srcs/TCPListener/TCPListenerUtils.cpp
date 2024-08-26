@@ -1,32 +1,11 @@
 #include "TCPListener.hpp"
 
-//splits an uri into path(first), filename(second)
-//result is returned in a pair of strings
-std::pair<std::string, std::string> TCPListener::splitUri(std::string uri)
-{
-	std::string tmp = uri;
-    std::string::size_type pos = uri.find('?');
-
-    if (pos != std::string::npos) {
-        tmp = uri.substr(0, pos);
-    }
-
-	pos = tmp.find_last_of('/');
-
-	if (pos == std::string::npos)
-		return std::make_pair("", tmp);
-	else if (pos == uri.length())
-		return std::make_pair(tmp, "");
-	else
-		return std::make_pair(tmp.substr(0, pos + 1), tmp.substr(pos + 1));
-}
-
 //checks if a request is a valid cgi requests
 bool	TCPListener::checkCgiRequest(int fd, Server *s) {
 	Request r = clients[fd].getRequest();
 	std::vector<Location> &locations = s->getLocations();
 
-	std::pair<std::string, std::string> uri_pair = splitUri(r.getUri());
+	std::pair<std::string, std::string> uri_pair = splitUrl(r.getUri(), locations);
 	if (uri_pair.second == "")
 		return false;
 
@@ -61,7 +40,7 @@ std::pair<int, int>	TCPListener::createCgiHandler(int fd, Server *s) {
 	std::vector<Location> &locations = s->getLocations();
 	Request r = clients[fd].getRequest();
 
-	std::pair<std::string, std::string> uri_pair = splitUri(r.getUri());
+	std::pair<std::string, std::string> uri_pair = splitUrl(r.getUri(), locations);
 
 	for (i = 0; i < locations.size(); ++i) {
 		if (locations[i].getUri() == uri_pair.first)

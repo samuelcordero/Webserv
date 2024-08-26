@@ -43,7 +43,6 @@ std::pair<int, int> TCPListener::readData(int fd)
 			disconnectClient(fd);
 		}
 	} else {
-		std::cerr << "omg\n";
 		clients[fd].setLastConn(getCurrentEpochMillis());
 	}
 	if (bytesRead > 0) {

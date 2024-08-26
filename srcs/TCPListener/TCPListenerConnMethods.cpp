@@ -7,7 +7,9 @@ Response TCPListener::analizer(const Request &request, Server *s)
 
 	std::string decoded = urlDecoder(request.getUri());
 
-	std::pair<std::string, std::string> uri_pair = splitUri(decoded);
+	//std::cerr << "Uri before split: " << request.getUri() << std::endl;
+
+	std::pair<std::string, std::string> uri_pair = splitUrl(decoded, locations);
 
 	std::cerr << "Building response for resource " << uri_pair.second << " at location " << uri_pair.first << std::endl;
 	for (size_t i = 0; i < locations.size(); i++)

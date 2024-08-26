@@ -1,8 +1,5 @@
 #include "extraFunctions.hpp"
 
-#include <iostream>
-#include <string>
-
 std::string getMimeType(const std::string &filename)
 {
     // Find the position of the last dot in the filename
@@ -171,4 +168,30 @@ bool isTimeout(long long startMillis, long long endMillis, int thresholdSeconds)
     long long diffMillis = endMillis - startMillis;
     long long diffSeconds = diffMillis / 1000;
     return diffSeconds >= thresholdSeconds;
+}
+
+
+std::pair<std::string, std::string> splitUrl(const std::string& uri, const std::vector<Location>& locations) {
+	std::pair<std::string, std::string> uri_pair;
+	std::string tmp = uri;
+    std::string::size_type pos = uri.find('?');
+
+    if (pos != std::string::npos) {
+        tmp = uri.substr(0, pos);
+    }
+
+    for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
+        const std::string& location = it->getUri();
+        if (uri.compare(0, location.size(), location) == 0) {
+            // Verifica que después del prefijo coincidente, la URI tenga un '/' o sea el final de la URI
+            if (tmp.size() == location.size() || tmp[location.size() - 1] == '/') {
+                // Calcula la ruta relativa
+                std::string relativePath = tmp.substr(location.size());
+                uri_pair.first = location;
+				uri_pair.second = relativePath;
+            }
+        }
+    }
+    // Si no encuentra ninguna coincidencia, retorna un par de strings vacíos
+    return uri_pair;
 }
