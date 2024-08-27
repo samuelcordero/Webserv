@@ -34,7 +34,7 @@ Response::Response()
 }
 
 //only for redirects!
-Response::Response(int redirectCode, const std::string &location, const std::string &body)
+Response::Response(int redirectCode, const std::string &location)
 {
 	switch (redirectCode)
     {
@@ -68,7 +68,6 @@ Response::Response(int redirectCode, const std::string &location, const std::str
     message += "Connection: keep-alive\r\n";
 	message += "Location: " + location + "\r\n";
     message += "\r\n";
-	message += body;
 }
 
 

@@ -79,16 +79,14 @@ class TCPListener {
 
 		//TCPListenerConnMethods.cpp
 		Response			analizer(const Request& request, Server *s);
-		Response 			Get(std::pair<std::string, std::string> uri_pair, Location &location, Server *s);
-		Response 			Head(std::pair<std::string, std::string> uri_pair, Location &location, Server *s);
+		Response 			Get(std::pair<std::string, std::string> uri_pair, Location &location, Server *s, const Request &request);
+		Response 			Head(std::pair<std::string, std::string> uri_pair, Location &location, Server *s, const Request &request);
 		Response 			Delete(std::pair<std::string, std::string> uri_pair, Location &location, Server *s);
 		Response 			Post(std::pair<std::string, std::string> uri_pair, Location &location, Server *s, const Request &request);
 		std::pair<int, int>	Client2CGI(int fd);
 		std::pair<int, int>	CGI2Client(int fd);
 
 		//TCPListenerUtils.cpp
-		std::pair<std::string,
-			std::string>	splitUri(std::string uri);
 		bool				checkCgiRequest(int fd, Server *s);
 		std::pair<int, int>	createCgiHandler(int fd, Server *s);
 		void				killCGI(int fd);

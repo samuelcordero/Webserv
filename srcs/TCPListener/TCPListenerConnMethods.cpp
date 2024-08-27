@@ -19,7 +19,7 @@ Response TCPListener::analizer(const Request &request, Server *s)
 			if ((locations[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
 				if (locations[i].getRedirect().first > 300 && locations[i].getRedirect().first < 308) 
-					return (Response(locations[i].getRedirect().first, locations[i].getRedirect().second, ""));
+					return (Response(locations[i].getRedirect().first, locations[i].getRedirect().second));
 				if (uri_pair.second == "" && locations[i].hasAutoIndex())
 					return (Response(200, locations[i].getAutoIndex(), true, true));
 				else if (uri_pair.second == "")
@@ -49,9 +49,9 @@ Response TCPListener::analizer(const Request &request, Server *s)
 				if (request.getNumMethod() == 1)
 					return (Post(uri_pair, locations[i], s, request));
 				if (request.getNumMethod() == 2 && request.getMethod() == "GET")
-					return (Get(uri_pair, locations[i], s));
+					return (Get(uri_pair, locations[i], s, request));
 				if (request.getNumMethod() == 2 && request.getMethod() == "HEAD")
-					return (Head(uri_pair, locations[i], s));
+					return (Head(uri_pair, locations[i], s, request));
 				if (request.getNumMethod() == 4)
 					return (Delete(uri_pair, locations[i], s));
 			}
@@ -66,7 +66,7 @@ Response TCPListener::analizer(const Request &request, Server *s)
 }
 
 // GET method handler
-Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location &location, Server *s)
+Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location &location, Server *s, const Request &request)
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
 	
@@ -75,6 +75,14 @@ Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location
 	if (access(file_path.c_str(), R_OK))
 		return s->error(403);
 	if (isDirectory(file_path)) {
+		if (uri_pair.second[uri_pair.second.size() - 1] != '/')
+		{
+			if (request.getHeaders().find("Host") != request.getHeaders().end()) {
+				std::string redirect = request.getHeaders()["Host"] + uri_pair.first + uri_pair.second + "/";
+				return (Response(301, redirect));
+			}
+			return s->error(400);
+		}
 		Indexer index(file_path);
 		return (Response(200, index.getHtml(), true, true));
 	}
@@ -96,7 +104,7 @@ Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location
 }
 
 // HEAD method handler
-Response TCPListener::Head(std::pair<std::string, std::string> uri_pair, Location &location, Server *s)
+Response TCPListener::Head(std::pair<std::string, std::string> uri_pair, Location &location, Server *s, const Request &request)
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
 	
@@ -106,6 +114,14 @@ Response TCPListener::Head(std::pair<std::string, std::string> uri_pair, Locatio
 	if (access(file_path.c_str(), R_OK))
 		return s->error(403);
 	if (isDirectory(file_path)) {
+		if (uri_pair.second[uri_pair.second.size() - 1] != '/')
+		{
+			if (request.getHeaders().find("Host") != request.getHeaders().end()) {
+				std::string redirect = request.getHeaders()["Host"] + uri_pair.first + uri_pair.second + "/";
+				return (Response(301, redirect));
+			}
+			return s->error(400);
+		}
 		Indexer index(file_path);
 		return (Response(200, index.getHtml(), false, true));
 	}
@@ -151,6 +167,9 @@ Response TCPListener::Delete(std::pair<std::string, std::string> uri_pair, Locat
 Response TCPListener::Post(std::pair<std::string, std::string> uri_pair, Location &location, Server *s, const Request &request)
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
+
+	if (isDirectory(file_path)) 
+		return s->error(405);
 
 	if (access(file_path.c_str(), F_OK))
 		return s->error(404);
