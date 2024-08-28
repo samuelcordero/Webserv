@@ -91,6 +91,9 @@ int main(int argc, char **argv)
   --header "Content-Type: text/plain" \
   --data-binary @<(echo -en '4\r\nart=\r\n7\r\nMozilla\r\n9\r\nDeveloper\r\n7\r\nNetwork\r\n0\r\n\r\n')
 
-
+	curl -X POST http://localhost:8080/php/test.php \
+  --header "Transfer-Encoding: chunked" \
+  --header "Content-Type: text/plain" \
+  --data-binary @<(echo -en '4\r\nart=\r\n7\r\nMozilla\r\n9\r\nDeveloper\r\n7\r\nNetwork\r\n0\r\n\r\n')
 
 */
