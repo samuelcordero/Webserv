@@ -5,7 +5,10 @@ import cgi
 import cgitb
 import html
 from art import *
+import os
 
+# Get and print the current working directory
+current_directory = os.getcwd()
 # Enable debugging
 cgitb.enable()
 
@@ -14,6 +17,8 @@ print("Content-Type: text/html\r\n\r\n")
 
 # Initialize input_data
 input_data = ""
+
+
 
 # Try to use cgi.FieldStorage() first
 form = cgi.FieldStorage()
@@ -37,6 +42,7 @@ print("<html><head><title>CGI ART Test</title></head><body>")
 print("<h1>Debug Information</h1>")
 print("<p>Form keys: {}</p>".format(list(form.keys())))
 print("<p>Input data: {}</p>".format(input_data))
+print("<p>Current Working Directory: {}</p>".format(current_directory))
 print("<pre>")
 print(escaped_art)
 print("</pre>")

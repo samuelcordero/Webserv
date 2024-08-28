@@ -73,3 +73,27 @@ int main(int argc, char **argv)
 	std::cout << "The MIME type of " << filename << " is: " << mimeType << std::endl;
 	// end of MIME type test
 	*/
+
+
+//Some test commands:
+
+/*
+	1. POST a picture with curl
+
+	curl --data-binary "@/home/samu/Pictures/landscape.jpg" http://localhost:8080/files/postpic.jpg
+	curl --data-binary "@/home/samu/C42/Webserv/test" http://http://localhost:8080/files/test-folder/file-inside-nested-folder.txt
+	diff test html/files/test-folder/file-inside-nested-folder.txt
+
+	2. POST chunked requests
+
+	curl -X POST http://localhost:8080/files/some%20%20file.txt \
+  --header "Transfer-Encoding: chunked" \
+  --header "Content-Type: text/plain" \
+  --data-binary @<(echo -en '4\r\nart=\r\n7\r\nMozilla\r\n9\r\nDeveloper\r\n7\r\nNetwork\r\n0\r\n\r\n')
+
+	curl -X POST http://localhost:8080/php/test.php \
+  --header "Transfer-Encoding: chunked" \
+  --header "Content-Type: text/plain" \
+  --data-binary @<(echo -en '4\r\nart=\r\n7\r\nMozilla\r\n9\r\nDeveloper\r\n7\r\nNetwork\r\n0\r\n\r\n')
+
+*/

@@ -104,7 +104,7 @@ void CGIHandler::executeCGIScript()
 
         // Prepare arguments for execve
         std::vector<char *> argv;
-		argv.push_back(const_cast<char *>(interpreter.c_str()));
+		//argv.push_back(const_cast<char *>(interpreter.c_str()));
         argv.push_back(const_cast<char *>(scriptPath.c_str()));
         argv.push_back(NULL); // The last element of argv must be NULL
 
@@ -133,10 +133,11 @@ void CGIHandler::executeCGIScript()
 
 		envp.push_back(NULL); // The last element of envp must be NULL
 
-        execve(interpreter.c_str(), argv.data(), envp.data());
+        execve(scriptPath.c_str(), argv.data(), envp.data());
 
         // If execve fails, the following lines will execute
-        std::cerr << "Failed to execute CGI script\n";
+		std::cerr << "Content-Type: text/html\r\n\r\n";
+        std::cerr << "Failed to execute CGI script " << scriptPath << "\n";
         std::exit(1);
     }
     else if (pid > 0)
@@ -173,47 +174,15 @@ void CGIHandler::setCGIEnvironment()
 
 bool CGIHandler::waitForChildProcess()
 {
-    int status;
     pid_t result = waitpid(pid, &status, WNOHANG);
+
+	if (WIFEXITED(status))
+		exitCode = WEXITSTATUS(status);
 
 	if (result == 0) // process not done
 		return false;
 	return true;
 
-    /* if (result == 0)
-    {
-        // Child process is still running
-        sleep(1); // Wait for 1 seconds
-        result = waitpid(pid, &status, WNOHANG);
-        if (result == 0)
-        {
-            // Child process is still running after timeout
-            kill(pid, SIGKILL); // Kill the child process
-            outputData = "Error: Timeout";
-            return;
-        }
-    }
-
-    if (WIFEXITED(status))
-    {
-        char buffer[1024];
-        ssize_t bytesRead;
-        std::cout << "Output of execution:\n"
-                  << std::endl;
-        std::cout << "Content-Type: text/html\r\n\r\n";
-        while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer) - 1)) > 0)
-        {
-            buffer[bytesRead] = '\0';
-            // comment the stdout to avoid debug printing
-            // std::cout << buffer;
-            // append the output to outputData member
-            outputData.append(buffer, bytesRead);
-        }
-    }
-    else
-    {
-        std::cerr << "CGI script execution failed\n";
-    } */
 }
 
 std::string CGIHandler::getOutputData()
@@ -234,6 +203,11 @@ int CGIHandler::getWriteEnd()
 int CGIHandler::getClientFd()
 {
     return client_fd;
+}
+
+int CGIHandler::getExitCode()
+{
+    return exitCode;
 }
 
 bool	CGIHandler::executionDone() {

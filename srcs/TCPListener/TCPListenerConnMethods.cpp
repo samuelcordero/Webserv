@@ -7,7 +7,9 @@ Response TCPListener::analizer(const Request &request, Server *s)
 
 	std::string decoded = urlDecoder(request.getUri());
 
-	std::pair<std::string, std::string> uri_pair = splitUri(decoded);
+	//std::cerr << "Uri before split: " << request.getUri() << std::endl;
+
+	std::pair<std::string, std::string> uri_pair = splitUrl(decoded, locations);
 
 	std::cerr << "Building response for resource " << uri_pair.second << " at location " << uri_pair.first << std::endl;
 	for (size_t i = 0; i < locations.size(); i++)
@@ -17,7 +19,7 @@ Response TCPListener::analizer(const Request &request, Server *s)
 			if ((locations[i].getMethods() & request.getNumMethod()) == request.getNumMethod())
 			{
 				if (locations[i].getRedirect().first > 300 && locations[i].getRedirect().first < 308) 
-					return (Response(locations[i].getRedirect().first, locations[i].getRedirect().second, ""));
+					return (Response(locations[i].getRedirect().first, locations[i].getRedirect().second));
 				if (uri_pair.second == "" && locations[i].hasAutoIndex())
 					return (Response(200, locations[i].getAutoIndex(), true, true));
 				else if (uri_pair.second == "")
@@ -47,9 +49,9 @@ Response TCPListener::analizer(const Request &request, Server *s)
 				if (request.getNumMethod() == 1)
 					return (Post(uri_pair, locations[i], s, request));
 				if (request.getNumMethod() == 2 && request.getMethod() == "GET")
-					return (Get(uri_pair, locations[i], s));
+					return (Get(uri_pair, locations[i], s, request));
 				if (request.getNumMethod() == 2 && request.getMethod() == "HEAD")
-					return (Head(uri_pair, locations[i], s));
+					return (Head(uri_pair, locations[i], s, request));
 				if (request.getNumMethod() == 4)
 					return (Delete(uri_pair, locations[i], s));
 			}
@@ -64,7 +66,7 @@ Response TCPListener::analizer(const Request &request, Server *s)
 }
 
 // GET method handler
-Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location &location, Server *s)
+Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location &location, Server *s, const Request &request)
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
 	
@@ -72,6 +74,19 @@ Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location
 		return s->error(404);
 	if (access(file_path.c_str(), R_OK))
 		return s->error(403);
+	if (isDirectory(file_path)) {
+		if (uri_pair.second[uri_pair.second.size() - 1] != '/')
+		{
+			if (request.getHeaders().find("Host") != request.getHeaders().end()) {
+				std::string redirect = request.getHeaders()["Host"] + uri_pair.first + uri_pair.second + "/";
+				return (Response(301, redirect));
+			}
+			return s->error(400);
+		}
+		Indexer index(file_path);
+		return (Response(200, index.getHtml(), true, true));
+	}
+
 	std::ifstream file(file_path.c_str());
 
 	if (file.is_open())
@@ -89,14 +104,27 @@ Response TCPListener::Get(std::pair<std::string, std::string> uri_pair, Location
 }
 
 // HEAD method handler
-Response TCPListener::Head(std::pair<std::string, std::string> uri_pair, Location &location, Server *s)
+Response TCPListener::Head(std::pair<std::string, std::string> uri_pair, Location &location, Server *s, const Request &request)
 {
 	std::string file_path = location.getRoot() + "/" + uri_pair.second;
+	
 
 	if (access(file_path.c_str(), F_OK))
 		return s->error(404);
 	if (access(file_path.c_str(), R_OK))
 		return s->error(403);
+	if (isDirectory(file_path)) {
+		if (uri_pair.second[uri_pair.second.size() - 1] != '/')
+		{
+			if (request.getHeaders().find("Host") != request.getHeaders().end()) {
+				std::string redirect = request.getHeaders()["Host"] + uri_pair.first + uri_pair.second + "/";
+				return (Response(301, redirect));
+			}
+			return s->error(400);
+		}
+		Indexer index(file_path);
+		return (Response(200, index.getHtml(), false, true));
+	}
 	//std::cerr << "opening file " << file_path << std::endl;
 	std::ifstream file(file_path.c_str());
 
@@ -129,19 +157,34 @@ Response TCPListener::Delete(std::pair<std::string, std::string> uri_pair, Locat
 		return s->error(403);
 
 	if (remove(file_path.c_str()) == 0)
-		return Response(204, "", false, false);
+		return Response(204, "", false, true);
 	else
 		return s->error(500);
 }
 
 // POST method handler
-//nginx returns 405 if posting to a static file (no cgi)
+//nginx returns 405 if posting to a static file (no cgi), but we write/rewrite to allow easy upload
 Response TCPListener::Post(std::pair<std::string, std::string> uri_pair, Location &location, Server *s, const Request &request)
 {
-	(void) uri_pair;
-	(void) location;
-	(void) request;
-	return s->error(405);
+	std::string file_path = location.getRoot() + "/" + uri_pair.second;
+
+	if (isDirectory(file_path)) 
+		return s->error(405);
+
+	if (access(file_path.c_str(), F_OK))
+		return s->error(404);
+	if (access(file_path.c_str(), R_OK))
+		return s->error(403);
+	if (access(file_path.c_str(), W_OK))
+		return s->error(403);
+	std::ofstream outfile;
+	std::cerr << "opening file " << file_path << std::endl;
+	outfile.open(file_path.c_str());
+	if (!outfile.is_open())
+		return s->error(500);
+	outfile << request.getBody();
+	outfile.close();
+	return Response(200, request.getBody(), true, uri_pair.second);
 }
 
 //event handler for sending information to cgi through its input fd
@@ -195,7 +238,12 @@ std::pair<int, int>	TCPListener::CGI2Client(int fd) {
 		response_buffer.append(read_buffer, bytes_read);
 		//std::cerr << "read " << bytes_read << " bytes from cgi\n";
 	}
-	clients[client_fd].setResponse(Response(200, response_buffer, true, false));
+	//std::cerr << "Response cgi: {" << response_buffer << "}\n";
+	if (cgi_handlers[fd]->getExitCode()) {
+		clients[client_fd].setResponse(Response(500, response_buffer, true, false));
+	} else {
+		clients[client_fd].setResponse(Response(200, response_buffer, true, false));
+	}
 	eventManager->removeFromMonitoring(cgi_stdout);
 	close(cgi_stdout);
 	clients[client_fd].setCGI(NULL);

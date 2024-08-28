@@ -29,7 +29,8 @@ class Server {
 		Server& operator=(const Server& copy);
 		Server(const Server& copy);
 		std::string getName();
-		int getPort();
+		std::string	getListen();
+		int			getPort();
 		std::vector<Location> &getLocations();
 		void		splitBlock();
 		int			setAuto();
@@ -41,8 +42,5 @@ class Server {
 		void		setMaxBodySize(size_t i);
 		unsigned long getMaxBodySize();
 		void		addToErrorMap(size_t i);
-		int			start(EventManager *eventManager);
-		int			getSocketFd();
-		std::pair<int, int>	event(epoll_event ev);
 		Response	error(int error_code);
 };

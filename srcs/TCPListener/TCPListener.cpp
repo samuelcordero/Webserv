@@ -12,12 +12,12 @@
 
 #include "TCPListener.hpp"
 
-TCPListener::TCPListener(int port) : port(port)
+TCPListener::TCPListener(int port, const std::string &listenTo) : port(port)
 {
 	server_ctr = 0;
 	socket_fd = -1;
 	this->eventManager = NULL;
-	start();
+	start(listenTo);
 }
 
 //destructor
@@ -48,7 +48,7 @@ TCPListener::TCPListener(const TCPListener &copy)
 }
 
 //starts the listener, cretes a socket and binds it to requeted port
-int TCPListener::start()
+int TCPListener::start(const std::string &listenTo)
 {
 	socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket_fd == -1)
@@ -68,6 +68,10 @@ int TCPListener::start()
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(port);
 	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    if (inet_aton(listenTo.c_str(), &server_addr.sin_addr) == 0) {
+        std::cerr << "Invalid address/Address not supported: " << listenTo << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
 	if (bind(socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
 	{

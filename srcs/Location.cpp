@@ -192,7 +192,7 @@ std::string	Location::getAutoIndex() {
 	return i.getHtml();
 }
 
-std::string	Location::getUri()
+std::string	Location::getUri() const
 {
 	return (this->uri);
 }

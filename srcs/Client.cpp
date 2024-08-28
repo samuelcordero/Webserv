@@ -89,6 +89,10 @@ void Client::clearRequest() {
 	request.second = false;
 }
 
+void Client::clearRequestBuffer() {
+	request_buffer = "";
+}
+
 void Client::clearResponse() {
 	if (response.first)
 		delete response.first;
@@ -130,6 +134,7 @@ void	Client::setCGI(CGIHandler *handler) {
 CGIHandler	*Client::getCGI() {
 	return cgi;
 }
+
 void	Client::setCgiStartTime(long long now) {
 	cgi_start = now;
 }

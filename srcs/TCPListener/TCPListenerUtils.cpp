@@ -1,47 +1,11 @@
 #include "TCPListener.hpp"
 
-//splits an uri into path(first), filename(second)
-//result is returned in a pair of strings
-std::pair<std::string, std::string> TCPListener::splitUri(std::string uri)
-{
-	std::string tmp = uri;
-    std::string::size_type pos = uri.find('?');
-
-    if (pos != std::string::npos) {
-        tmp = uri.substr(0, pos);
-    }
-
-	pos = tmp.find_last_of('/');
-
-	if (pos == std::string::npos)
-		return std::make_pair("", tmp);
-	else if (pos == uri.length())
-		return std::make_pair(tmp, "");
-	else
-		return std::make_pair(tmp.substr(0, pos + 1), tmp.substr(pos + 1));
-}
-
-//returns time since epoch in milliseconds
-long long TCPListener::getCurrentEpochMillis() {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return static_cast<long long>(tv.tv_sec) * 1000 + tv.tv_usec / 1000;
-}
-
-//returns true once the threshold is greater or equal to the time diff
-bool TCPListener::isTimeout(long long startMillis, long long endMillis, int thresholdSeconds) {
-    long long diffMillis = endMillis - startMillis;
-    long long diffSeconds = diffMillis / 1000;
-    return diffSeconds >= thresholdSeconds;
-}
-
-
 //checks if a request is a valid cgi requests
 bool	TCPListener::checkCgiRequest(int fd, Server *s) {
 	Request r = clients[fd].getRequest();
 	std::vector<Location> &locations = s->getLocations();
 
-	std::pair<std::string, std::string> uri_pair = splitUri(r.getUri());
+	std::pair<std::string, std::string> uri_pair = splitUrl(r.getUri(), locations);
 	if (uri_pair.second == "")
 		return false;
 
@@ -76,7 +40,7 @@ std::pair<int, int>	TCPListener::createCgiHandler(int fd, Server *s) {
 	std::vector<Location> &locations = s->getLocations();
 	Request r = clients[fd].getRequest();
 
-	std::pair<std::string, std::string> uri_pair = splitUri(r.getUri());
+	std::pair<std::string, std::string> uri_pair = splitUrl(r.getUri(), locations);
 
 	for (i = 0; i < locations.size(); ++i) {
 		if (locations[i].getUri() == uri_pair.first)
@@ -85,7 +49,7 @@ std::pair<int, int>	TCPListener::createCgiHandler(int fd, Server *s) {
 
 	std::string scriptPath = locations[i].getRoot() + "/" + uri_pair.second;
 	
-	std::cerr << "Building cgi response for resource " << uri_pair.second << " at location " << uri_pair.first
+	std::cerr << "Building cgi response for resource " << uri_pair.second << " at location " << scriptPath
 		<< " for client " << fd << std::endl;
 
 	CGIHandler *handler = new CGIHandler(scriptPath, locations[i].getCgi().second, fd, clients[fd].getRequest());

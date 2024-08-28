@@ -19,6 +19,7 @@ public:
 	int getClientFd();
 	bool	executionDone();
 	void	checkAndKill();
+	int 	getExitCode();
 
 private:
     std::string scriptPath;
@@ -27,6 +28,8 @@ private:
 	std::string interpreter;
     int pipein[2];
 	int pipeout[2];
+	int status;
+	int	exitCode;
 	const Request 	&request;
 	int	client_fd;
 	pid_t pid;

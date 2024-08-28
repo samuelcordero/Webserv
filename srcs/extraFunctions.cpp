@@ -1,8 +1,5 @@
 #include "extraFunctions.hpp"
 
-#include <iostream>
-#include <string>
-
 std::string getMimeType(const std::string &filename)
 {
     // Find the position of the last dot in the filename
@@ -146,4 +143,55 @@ std::string getHost(const std::string& hostport) {
     
     // Si no encuentra ':', se asume que todo el string es el host
     return hostport;
+}
+
+bool isDirectory(const std::string& path) {
+    struct stat statbuf;
+    // Check if the stat call is successful
+    if (stat(path.c_str(), &statbuf) != 0) {
+        // Error occurred (file doesn't exist, or we don't have permission)
+        return false;
+    }
+    // Use S_ISDIR macro to check if it's a directory
+    return S_ISDIR(statbuf.st_mode);
+}
+
+//returns time since epoch in milliseconds
+long long getCurrentEpochMillis() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return static_cast<long long>(tv.tv_sec) * 1000 + tv.tv_usec / 1000;
+}
+
+//returns true once the threshold is greater or equal to the time diff
+bool isTimeout(long long startMillis, long long endMillis, int thresholdSeconds) {
+    long long diffMillis = endMillis - startMillis;
+    long long diffSeconds = diffMillis / 1000;
+    return diffSeconds >= thresholdSeconds;
+}
+
+
+std::pair<std::string, std::string> splitUrl(const std::string& uri, const std::vector<Location>& locations) {
+	std::pair<std::string, std::string> uri_pair;
+	std::string tmp = uri;
+    std::string::size_type pos = uri.find('?');
+
+    if (pos != std::string::npos) {
+        tmp = uri.substr(0, pos);
+    }
+
+    for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
+        const std::string& location = it->getUri();
+        if (uri.compare(0, location.size(), location) == 0) {
+            // Verifica que después del prefijo coincidente, la URI tenga un '/' o sea el final de la URI
+            if (tmp.size() == location.size() || tmp[location.size() - 1] == '/') {
+                // Calcula la ruta relativa
+                std::string relativePath = tmp.substr(location.size());
+                uri_pair.first = location;
+				uri_pair.second = relativePath;
+            }
+        }
+    }
+    // Si no encuentra ninguna coincidencia, retorna un par de strings vacíos
+    return uri_pair;
 }

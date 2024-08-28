@@ -61,7 +61,7 @@ void	Controller::run() {
 	//initialize listeners and attach servers
 	for (size_t i = 0; i < servers.size(); ++i) {
 		if (listeners.find(servers[i].getPort()) == listeners.end()) {
-			listeners[servers[i].getPort()] = new TCPListener(servers[i].getPort());
+			listeners[servers[i].getPort()] = new TCPListener(servers[i].getPort(), servers[i].getListen());
 			listeners[servers[i].getPort()]->setEventManager(&event_manager);
 			listener_matcher[listeners[servers[i].getPort()]->getSocketFd()] = listeners[servers[i].getPort()];
 			event_manager.addToMonitoring(listeners[servers[i].getPort()]->getSocketFd(), EPOLLIN);
@@ -74,12 +74,19 @@ void	Controller::run() {
 	}
 
 	//main execution loop
+	last_check = getCurrentEpochMillis();
 	while (true) {
 		events = event_manager.getNonblockingEvents();
 
 		for (size_t i = 0; i < events.first; ++i) {
 			//std::cerr << "solving event for " << events.second->at(i).data.fd << std::endl;
 			solveEvent(events.second->at(i));
+		}
+		if (isTimeout(last_check, getCurrentEpochMillis(), TBCHECKS)) {
+			for (std::map<int, TCPListener *>::iterator it = listeners.begin(); it != listeners.end(); ++it) {
+				it->second->checkForTimeouts();
+			}
+			last_check = getCurrentEpochMillis();
 		}
 	}
 }

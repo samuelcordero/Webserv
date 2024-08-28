@@ -35,6 +35,7 @@ class Client {
 		long long			getLastConn();
 		void				clearResponse();
 		void				clearRequest();
+		void				clearRequestBuffer();
 		void				disconnect(int fd);
 		void				addToRequestBuffer(const std::string &b);
 		std::string			&getRequestBuffer();

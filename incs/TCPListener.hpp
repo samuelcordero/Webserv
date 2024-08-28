@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   TCPListener.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: agserran <agserran@student.42madrid.com    +#+  +:+       +#+        */
+/*   By: sacorder <sacorder@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/15 12:59:14 by sacorder          #+#    #+#             */
-/*   Updated: 2024/08/15 12:18:24 by agserran         ###   ########.fr       */
+/*   Updated: 2024/08/26 11:38:56 by sacorder         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,6 @@
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <sys/epoll.h>
-# include <sys/time.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
 # include <unistd.h>
@@ -29,7 +28,7 @@
 # include <cstring>
 # include <utility>
 # include <fstream>
-# include <ctime>
+
 
 # include "Server.hpp"
 # include "Response.hpp"
@@ -38,11 +37,12 @@
 # include "EventManager.hpp"
 # include "CgiHandler.hpp"
 # include "extraFunctions.hpp"
+# include "Http.hpp"
 
 # define MAX_EVENTS 128
 
-# define CONN_TIMEOUT 15 //timeout for connections in seconds
-# define CGI_TIMEOUT 7 //timeout for CGI in seconds
+# define CONN_TIMEOUT 13 //timeout for connections in seconds
+# define CGI_TIMEOUT 10 //timeout for CGI in seconds
 
 # define CLIENT 1
 # define CGI_WRITE 2
@@ -55,6 +55,7 @@ class Server;
 class Response;
 class Location;
 class Client;
+class Http;
 
 class TCPListener {
 	private:
@@ -67,6 +68,7 @@ class TCPListener {
 		char						matcher[4096];
 		EventManager				*eventManager;
 		CGIHandler					*cgi_handlers[4096];
+		Http						httpParser;
 
 		//TCPListenerClientUtils.cpp
 		std::pair<int, int>	newClient();
@@ -77,32 +79,29 @@ class TCPListener {
 
 		//TCPListenerConnMethods.cpp
 		Response			analizer(const Request& request, Server *s);
-		Response 			Get(std::pair<std::string, std::string> uri_pair, Location &location, Server *s);
-		Response 			Head(std::pair<std::string, std::string> uri_pair, Location &location, Server *s);
+		Response 			Get(std::pair<std::string, std::string> uri_pair, Location &location, Server *s, const Request &request);
+		Response 			Head(std::pair<std::string, std::string> uri_pair, Location &location, Server *s, const Request &request);
 		Response 			Delete(std::pair<std::string, std::string> uri_pair, Location &location, Server *s);
 		Response 			Post(std::pair<std::string, std::string> uri_pair, Location &location, Server *s, const Request &request);
 		std::pair<int, int>	Client2CGI(int fd);
 		std::pair<int, int>	CGI2Client(int fd);
 
 		//TCPListenerUtils.cpp
-		std::pair<std::string,
-			std::string>	splitUri(std::string uri);
-		long long			getCurrentEpochMillis();
-		bool 				isTimeout(long long startMillis, long long endMillis, int thresholdSeconds);
 		bool				checkCgiRequest(int fd, Server *s);
 		std::pair<int, int>	createCgiHandler(int fd, Server *s);
 		void				killCGI(int fd);
 
 	public:
-		TCPListener(int port);
+		TCPListener(int port, const std::string &listenTo);
 		~TCPListener();
 		TCPListener(const TCPListener& copy);
 		TCPListener& operator=(const TCPListener& copy);
-		int		start();
+		int		start(const std::string &listen);
 		int		getSocketFd();
 		void	setEventManager(EventManager *eventManager);
 		std::pair<int, int>		checkEvent(epoll_event ev);
 		bool	attachServer(Server *s);
+		void	checkForTimeouts();
 		//void	run();
 };
 
