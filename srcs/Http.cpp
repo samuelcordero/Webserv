@@ -43,7 +43,10 @@ State Http::parse(const std::string& data) {
                         std::istringstream lengthStream(headers["Content-Length"]);
                         lengthStream >> contentLength;
 						//std::cerr << " parsed content length: " << contentLength << std::endl;
-                        state = STATE_BODY;
+						if (contentLength == 0)
+							state = STATE_COMPLETE;
+						else
+                        	state = STATE_BODY;
                     } else {
 						//std::cerr  << "headrs done; no body\n";
                         state = STATE_COMPLETE; // No hay cuerpo, la solicitud está completa
@@ -118,7 +121,7 @@ bool Http::parseRequestLine(const std::string& line) {
     std::istringstream lineStream(line);
     lineStream >> method >> path >> version;
 
-    return (method == "GET" || method == "POST" || method == "DELETE") &&
+    return (method == "GET" || method == "POST" || method == "DELETE" || method == "HEAD") &&
            (version == "HTTP/1.1");
 }
 

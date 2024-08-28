@@ -6,7 +6,7 @@
 #    By: sacorder <sacorder@student.42madrid.com    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/02/04 17:08:31 by sacorder          #+#    #+#              #
-#    Updated: 2024/08/02 17:00:05 by sacorder         ###   ########.fr        #
+#    Updated: 2024/08/28 11:23:34 by sacorder         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -63,6 +63,7 @@ kill_server:
 	@ps aux | grep $(NAME) | grep -v grep | awk '{print $$2}' | xargs kill -9
 
 test: start_server
+	@touch html/empty/file
 	@pytest $(TEST_SCRIPT)
 	@pkill $(NAME)
 
