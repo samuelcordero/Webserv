@@ -61,7 +61,7 @@ void	Controller::run() {
 	//initialize listeners and attach servers
 	for (size_t i = 0; i < servers.size(); ++i) {
 		if (listeners.find(servers[i].getPort()) == listeners.end()) {
-			listeners[servers[i].getPort()] = new TCPListener(servers[i].getPort());
+			listeners[servers[i].getPort()] = new TCPListener(servers[i].getPort(), servers[i].getListen());
 			listeners[servers[i].getPort()]->setEventManager(&event_manager);
 			listener_matcher[listeners[servers[i].getPort()]->getSocketFd()] = listeners[servers[i].getPort()];
 			event_manager.addToMonitoring(listeners[servers[i].getPort()]->getSocketFd(), EPOLLIN);

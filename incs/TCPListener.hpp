@@ -92,11 +92,11 @@ class TCPListener {
 		void				killCGI(int fd);
 
 	public:
-		TCPListener(int port);
+		TCPListener(int port, const std::string &listenTo);
 		~TCPListener();
 		TCPListener(const TCPListener& copy);
 		TCPListener& operator=(const TCPListener& copy);
-		int		start();
+		int		start(const std::string &listen);
 		int		getSocketFd();
 		void	setEventManager(EventManager *eventManager);
 		std::pair<int, int>		checkEvent(epoll_event ev);

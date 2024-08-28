@@ -98,6 +98,21 @@ void	Server::setName(size_t i)
 	}
 }
 
+static	std::string	extractListen(const std::string &address)
+{
+	size_t colonPos = address.find(':');
+
+	if (colonPos == std::string::npos)
+	{
+		std::string error = "Error: couldn't convert host to ip";
+		throw ParseErrorException(error.c_str());
+	}
+
+	std::string	strListen = address.substr(0, colonPos);
+
+	return (strListen);
+}
+
 static	int	extractPort(const std::string &address)
 {
 	size_t colonPos = address.find(':');
@@ -128,7 +143,7 @@ void	Server::setListen(size_t i)
 		if (this->words[i + 1] == ";")
 		{
 			if (words[i - 1] == "listen") {
-				this->listen = this->words[i];
+				this->listen = extractListen(this->words[i]);
 				this->port = extractPort(this->words[i]);
 				break;
 			} else {
@@ -225,3 +240,8 @@ int Server::getPort() {
 std::string Server::getName() {
 	return name;
 }
+
+std::string Server::getListen() {
+	return listen;
+}
+

@@ -62,8 +62,8 @@ std::pair<int, int> TCPListener::readData(int fd)
 			} /* else {
 				std::cerr << "Not complete!\n";
 			} */
-		} else { //recheckear, hay que mandar bad request
-			std::cerr << "Invalid request detected! Clearing buffer\n";
+		} else {
+			std::cerr << "Invalid request detected! Clearing buffer and sending bad request\n";
 			clients[fd].clearRequestBuffer();
 			return createResponse(fd);
 		} 
