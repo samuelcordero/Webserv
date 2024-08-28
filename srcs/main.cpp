@@ -75,12 +75,14 @@ int main(int argc, char **argv)
 	*/
 
 
-//Useful test commands:
+//Some test commands:
 
 /*
 	1. POST a picture with curl
 
 	curl --data-binary "@/home/samu/Pictures/landscape.jpg" http://localhost:8080/files/postpic.jpg
+	curl --data-binary "@/home/samu/C42/Webserv/test" http://http://localhost:8080/files/test-folder/file-inside-nested-folder.txt
+	diff test html/files/test-folder/file-inside-nested-folder.txt
 
 	2. POST chunked requests
 
