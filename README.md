@@ -12,7 +12,7 @@ This work represents a comprehensive effort to master HTTP server implementation
 ## Features
 
 - **Comprehensive HTTP Support**: Implements essential HTTP methods (GET, POST, DELETE).
-- **Efficient I/O Handling**: Utilizes non-blocking I/O with `poll()` or its equivalent.
+- **Efficient I/O Handling**: Utilizes non-blocking I/O with `epoll()`.
 - **Dynamic Configuration**: Offers customizable configuration files, similar to NGINX, allowing users to define ports, error pages, routes, and more.
 - **CGI Execution**: Capable of executing CGI scripts for dynamic content generation.
 - **Static Content Serving**: Efficiently serves static HTML content.
